@@ -1,18 +1,61 @@
 import csv
-from app import db, Jamu
+# from app import db, Jamu
+import sqlite3
 
-with open('jamu.csv', newline='', encoding='utf-8') as file:
+conn= sqlite3.connect("database.db")
+cursor=conn.cursor()
+
+with open('data_jamu_274.csv', newline='', encoding='utf-8') as file:
     reader = csv.DictReader(file)
 
     for row in reader:
-        jamu = Jamu(
-            nama=row['nama'],
-            manfaat=row['manfaat'],
-            bahan=row['bahan']
+        cursor.execute("SELECT id_kategori FROM kategori WHERE nama_kategori=?", (row["KATEGORI"],))
+
+        kategori=cursor.fetchone()
+
+        if kategori is None:
+            cursor.execute("INSERT INTO kategori (nama_kategori) VALUES (?)", (row["KATEGORI"],))
+            id_kategori = cursor.lastrowid
+        else:
+            id_kategori = kategori[0]
+
+         # jenis
+        cursor.execute("SELECT id_jenis FROM jenis WHERE nama_jenis=?", (row["JENIS"],))
+        jenis = cursor.fetchone()
+
+        if jenis is None:
+            cursor.execute("INSERT INTO jenis (nama_jenis) VALUES (?)", (row["JENIS"],))
+            id_jenis = cursor.lastrowid
+        else:
+            id_jenis = jenis[0]
+
+         # insert jamu
+        cursor.execute("""
+        INSERT INTO jamu (
+            nama_jamu, khasiat, kandungan, aturan_minum, efek_samping,
+            id_kategori, id_jenis
         )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (
+            row["NAMA JAMU"],
+            row["KHASIAT"],
+            row["KANDUNGAN"],
+            row["ATURAN MINUM"],
+            row["EFEK SAMPING"],
+            id_kategori,
+            id_jenis
+        ))
 
-        db.session.add(jamu)
+        # jamu = Jamu(
+        #     nama=row['nama'],
+        #     manfaat=row['manfaat'],
+        #     bahan=row['bahan']
+        # )
 
-    db.session.commit()
+        # db.session.add(jamu)
+
+    # db.session.commit()
+conn.commit()
+conn.close
 
 print("Data berhasil dimasukkan!")
