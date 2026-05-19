@@ -41,7 +41,7 @@ df['tokens'] = df['clean'].apply(lambda x: x.split())
 # LABELING
 # ======================
 label_map = {
-    'kesehatan_wanita': ['keputih', 'kewanitaan', 'haid', 'miss v', 'rahim'],
+    'kesehatan_wanita': ['keputih', 'kewanitaan', 'haid', 'miss v', 'rahim',],
     'pencernaan': ['perut', 'lambung', 'maag', 'diare', 'sembelit'],
     'metabolisme': ['nafsu makan', 'kurus', 'gemuk'],
     'nyeri': ['pegal', 'linu', 'nyeri', 'sendi', 'asam urat'],
