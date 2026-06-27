@@ -15,10 +15,13 @@ export default function EditJamu() {
   const { id } = useParams();
   const navigate = useNavigate();
   
-  const fileInputRef = useRef(null);
-  const videoRef = useRef(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
-  const [formData, setFormData] = useState({
+  // URL Base backend Vercel online untuk load gambar statis admin
+  const BASE_BACKEND_URL = 'https://e-catalougue-jamu-madura.vercel.app';
+
+  const [formData, setFormData] = useState<any>({
     id_jamu: '', nama_jamu: '', khasiat: '', kandungan: '', 
     aturan_minum: '', efek_samping: '', image: '',
     id_perizinan: '', id_jenis: '', id_kabupaten: '', 
@@ -27,9 +30,9 @@ export default function EditJamu() {
 
   const [imagePreview, setImagePreview] = useState('');
   const [isCameraActive, setIsCameraActive] = useState(false);
-  const [cameraStream, setCameraStream] = useState(null);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
 
-  const [options, setOptions] = useState({
+  const [options, setOptions] = useState<any>({
     jenis: [], kabupaten: [], produsen: [], lokasiProduksi: [], perizinan: []
   });
 
@@ -62,7 +65,8 @@ export default function EditJamu() {
           });
 
           if (dataJamu.image) {
-            setImagePreview(`http://localhost:5000/static/uploads/${dataJamu.image}`);
+            // ✅ DIUBAH MENEMBAK IMAGE STATIC KE VERCEL ONLINE CLOUD
+            setImagePreview(`${BASE_BACKEND_URL}/static/uploads/${dataJamu.image}`);
           }
         }
 
@@ -94,9 +98,9 @@ export default function EditJamu() {
     };
   }, [cameraStream]);
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev: any) => ({ ...prev, [name]: value }));
   };
 
   const aktifkanKamera = async () => {
@@ -129,13 +133,15 @@ export default function EditJamu() {
       canvas.height = videoRef.current.videoHeight || 480;
       
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+      if (ctx) {
+        ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+      }
       
       canvas.toBlob((blob) => {
         if (blob) {
           const fileFoto = new File([blob], `jamu_kamera_${Date.now()}.jpg`, { type: 'image/jpeg' });
           
-          setFormData((prev) => ({ ...prev, image: fileFoto }));
+          setFormData((prev: any) => ({ ...prev, image: fileFoto }));
           setImagePreview(URL.createObjectURL(fileFoto)); 
           matikanKamera(); // Amankan jalur stream, matikan kamera setelah jepret sukses
         }
@@ -151,16 +157,16 @@ export default function EditJamu() {
     setIsCameraActive(false);
   };
 
-  const handleFileChange = (e) => {
-    const berkas = e.target.files[0];
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const berkas = e.target.files?.[0];
     if (berkas) {
       matikanKamera(); 
-      setFormData((prev) => ({ ...prev, image: berkas }));
+      setFormData((prev: any) => ({ ...prev, image: berkas }));
       setImagePreview(URL.createObjectURL(berkas));
     }
   };
 
-  const handleSimpan = async (e) => {
+  const handleSimpan = async (e: React.FormEvent) => {
     e.preventDefault(); 
     try {
       const payload = new FormData();
@@ -238,7 +244,6 @@ export default function EditJamu() {
                 ref={videoRef} 
                 autoPlay 
                 playsInline 
-                /* 🔥 TAMBAHKAN CLASS scale-x-[-1] DI SINI AGAR JADI SEPERTI CERMIN */
                 className="w-full h-full object-cover rounded-2xl bg-black scale-x-[-1]"
               />
             ) : (
@@ -267,7 +272,7 @@ export default function EditJamu() {
               ) : (
                 <>
                   <button type="button" onClick={aktifkanKamera} className="bg-[#f1dc34] hover:bg-yellow-400 text-black text-xs font-semibold px-3 py-2 rounded shadow transition">📷 Ambil Foto</button>
-                  <button type="button" onClick={() => fileInputRef.current.click()} className="bg-[#f1dc34] hover:bg-yellow-400 text-black text-xs font-semibold px-3 py-2 rounded shadow transition">🖼️ Unggah Foto</button>
+                  <button type="button" onClick={() => fileInputRef.current?.click()} className="bg-[#f1dc34] hover:bg-yellow-400 text-black text-xs font-semibold px-3 py-2 rounded shadow transition">🖼️ Unggah Foto</button>
                 </>
               )}
             </div>
@@ -290,7 +295,7 @@ export default function EditJamu() {
               <label className="text-sm font-bold">Perizinan:</label>
               <select name="id_perizinan" value={formData.id_perizinan} onChange={handleChange} className="bg-[#d9823b] text-white px-3 py-2 rounded font-medium focus:outline-none cursor-pointer">
                 <option value="">Pilih Perizinan</option>
-                {options.perizinan.map((item) => (
+                {options.perizinan.map((item: any) => (
                   <option key={item.id_perizinan} value={item.id_perizinan}>{item.nama_perizinan}</option>
                 ))}
               </select>
@@ -300,7 +305,7 @@ export default function EditJamu() {
               <label className="text-sm font-bold">Jenis:</label>
               <select name="id_jenis" value={formData.id_jenis} onChange={handleChange} className="bg-[#d9823b] text-white px-3 py-2 rounded font-medium focus:outline-none cursor-pointer">
                 <option value="">Pilih Jenis</option>
-                {options.jenis.map((item) => (
+                {options.jenis.map((item: any) => (
                   <option key={item.id_jenis} value={item.id_jenis}>{item.nama_jenis}</option>
                 ))}
               </select>
@@ -310,7 +315,7 @@ export default function EditJamu() {
               <label className="text-sm font-bold">Kabupaten:</label>
               <select name="id_kabupaten" value={formData.id_kabupaten} onChange={handleChange} className="bg-[#d9823b] text-white px-3 py-2 rounded font-medium focus:outline-none cursor-pointer">
                 <option value="">Pilih Kabupaten</option>
-                {options.kabupaten.map((item) => (
+                {options.kabupaten.map((item: any) => (
                   <option key={item.id_kabupaten} value={item.id_kabupaten}>{item.nama_kabupaten}</option>
                 ))}
               </select>
@@ -318,29 +323,29 @@ export default function EditJamu() {
 
             <div className="md:col-span-6 flex flex-col gap-1">
               <label className="text-sm font-bold">Khasiat:</label>
-              <textarea name="khasiat" rows="6" value={formData.khasiat} onChange={handleChange} className="bg-[#d9823b] text-white p-3 rounded text-xs leading-relaxed resize-none focus:outline-none"></textarea>
+              <textarea name="khasiat" rows={6} value={formData.khasiat} onChange={handleChange} className="bg-[#d9823b] text-white p-3 rounded text-xs leading-relaxed resize-none focus:outline-none"></textarea>
             </div>
 
             <div className="md:col-span-6 flex flex-col gap-1">
               <label className="text-sm font-bold">Kandungan:</label>
-              <textarea name="kandungan" rows="6" value={formData.kandungan} onChange={handleChange} className="bg-[#d9823b] text-white p-3 rounded text-xs leading-relaxed resize-none focus:outline-none"></textarea>
+              <textarea name="kandungan" rows={6} value={formData.kandungan} onChange={handleChange} className="bg-[#d9823b] text-white p-3 rounded text-xs leading-relaxed resize-none focus:outline-none"></textarea>
             </div>
 
             <div className="md:col-span-6 flex flex-col gap-1">
               <label className="text-sm font-bold">Aturan Minum:</label>
-              <textarea name="aturan_minum" rows="4" value={formData.aturan_minum} onChange={handleChange} className="bg-white text-black p-3 rounded text-xs border border-gray-300 resize-none focus:outline-none"></textarea>
+              <textarea name="aturan_minum" rows={4} value={formData.aturan_minum} onChange={handleChange} className="bg-white text-black p-3 rounded text-xs border border-gray-300 resize-none focus:outline-none"></textarea>
             </div>
 
             <div className="md:col-span-6 flex flex-col gap-1">
               <label className="text-sm font-bold text-blue-900 underline decoration-2">Efek Samping:</label>
-              <textarea name="efek_samping" rows="4" value={formData.efek_samping} onChange={handleChange} className="bg-white text-black p-3 rounded text-xs border border-gray-300 resize-none focus:outline-none"></textarea>
+              <textarea name="efek_samping" rows={4} value={formData.efek_samping} onChange={handleChange} className="bg-white text-black p-3 rounded text-xs border border-gray-300 resize-none focus:outline-none"></textarea>
             </div>
 
             <div className="md:col-span-6 flex flex-col gap-1">
               <label className="text-sm font-bold">Produsen:</label>
               <select name="id_produsen" value={formData.id_produsen} onChange={handleChange} className="bg-[#d9823b] text-white px-3 py-2 rounded font-medium focus:outline-none cursor-pointer">
                 <option value="">Pilih Produsen</option>
-                {options.produsen.map((item) => (
+                {options.produsen.map((item: any) => (
                   <option key={item.id_produsen} value={item.id_produsen}>{item.nama_produsen}</option>
                 ))}
               </select>
@@ -350,7 +355,7 @@ export default function EditJamu() {
               <label className="text-sm font-bold">Lokasi Produksi:</label>
               <select name="id_lokasi_produksi" value={formData.id_lokasi_produksi} onChange={handleChange} className="bg-[#d9823b] text-white px-3 py-2 rounded font-medium focus:outline-none cursor-pointer">
                 <option value="">Pilih Lokasi Produksi</option>
-                {options.lokasiProduksi.map((item) => (
+                {options.lokasiProduksi.map((item: any) => (
                   <option key={item.id_lokasi_produksi} value={item.id_lokasi_produksi}>{item.nama_lokasi}</option>
                 ))}
               </select>
