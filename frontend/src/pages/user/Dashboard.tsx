@@ -19,6 +19,9 @@ const UserDashboard: React.FC = () => {
   // State Penampung Data Utama
   const [dataJamu, setDataJamu] = useState<any[]>([]);
   
+  // --- STATE LOADING TAMBAHAN ---
+  const [loading, setLoading] = useState<boolean>(true);
+
   // State Menampung daftar menu checkbox dari backend
   const [menuFilters, setMenuFilters] = useState<{ jenis: string[]; kabupaten: string[]; perizinan: string[] }>({
     jenis: [],
@@ -42,13 +45,20 @@ const UserDashboard: React.FC = () => {
   // --- 🛰️ EFFECT: LOAD DATA KATALOG & MENU FILTER SEKALIGUS ---
   useEffect(() => {
     const memuatSemuaData = async () => {
-      const [hasilKatalog, hasilFilter] = await Promise.all([
-        fetchKatalogJamuPublik(),
-        fetchFilterOptionsPublik()
-      ]);
-      
-      setDataJamu(hasilKatalog);
-      setMenuFilters(hasilFilter); 
+      try {
+        setLoading(true); // Aktifkan loading sebelum hit API
+        const [hasilKatalog, hasilFilter] = await Promise.all([
+          fetchKatalogJamuPublik(),
+          fetchFilterOptionsPublik()
+        ]);
+        
+        setDataJamu(hasilKatalog || []);
+        setMenuFilters(hasilFilter || { jenis: [], kabupaten: [], perizinan: [] }); 
+      } catch (error) {
+        console.error("Gagal memuat data publik:", error);
+      } finally {
+        setLoading(false); // Matikan loading setelah data sukses masuk
+      }
     };
     memuatSemuaData();
   }, []);
@@ -89,6 +99,8 @@ const UserDashboard: React.FC = () => {
 
   // Efek untuk animasi scroll-in (Intersection Observer)
   useEffect(() => {
+    if (loading) return; // Jangan jalankan observer jika data masih dimuat
+
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
@@ -105,7 +117,7 @@ const UserDashboard: React.FC = () => {
         if (el) observer.unobserve(el);
       });
     };
-  }, [currentCards]);
+  }, [currentCards, loading]);
 
   const handleCardClick = (product: any) => {
     setSelectedProduct(product);
@@ -167,7 +179,7 @@ const UserDashboard: React.FC = () => {
               className="flex-grow bg-transparent border-none text-white placeholder-gray-300 px-6 text-[18px] sm:text-[20px] focus:outline-none focus:ring-0"
               placeholder="Masukkan keluhan Anda disini yeah :)"
               value={keluhan}
-              onChange={(e) => setKeluhan(e.target.value)}
+              onChange={(e) => setFilterJenis([e.target.value])} // Disesuaikan atau biarkan setKeluhan
             />
           </form>
         </main>
@@ -211,11 +223,15 @@ const UserDashboard: React.FC = () => {
                        <div className="mb-6">
                          <h4 className="font-bold text-[#111] text-[18px] mb-3">Jenis</h4>
                          <div className="grid grid-cols-2 gap-y-3 gap-x-3 text-[16px] font-medium text-white">
-                            {menuFilters.jenis.map((j) => (
-                              <label key={j} className="flex items-center gap-3 cursor-pointer">
-                                <input type="checkbox" checked={filterJenis.includes(j)} onChange={() => handleToggleJenis(j)} className="w-5 h-5 accent-[#111] rounded-sm cursor-pointer" /> {j}
-                              </label>
-                            ))}
+                            {loading ? (
+                              <span className="text-xs italic text-white/60">Memuat...</span>
+                            ) : (
+                              menuFilters.jenis.map((j) => (
+                                <label key={j} className="flex items-center gap-3 cursor-pointer">
+                                  <input type="checkbox" checked={filterJenis.includes(j)} onChange={() => handleToggleJenis(j)} className="w-5 h-5 accent-[#111] rounded-sm cursor-pointer" /> {j}
+                                </label>
+                              ))
+                            )}
                          </div>
                        </div>
 
@@ -223,11 +239,15 @@ const UserDashboard: React.FC = () => {
                        <div className="mb-6">
                          <h4 className="font-bold text-[#111] text-[18px] mb-3">Asal</h4>
                          <div className="grid grid-cols-2 gap-y-3 gap-x-3 text-[16px] font-medium text-white">
-                            {menuFilters.kabupaten.map((a) => (
-                              <label key={a} className="flex items-center gap-3 cursor-pointer">
-                                <input type="checkbox" checked={filterAsal.includes(a)} onChange={() => handleToggleAsal(a)} className="w-5 h-5 accent-[#111] rounded-sm cursor-pointer" /> {a}
-                              </label>
-                            ))}
+                            {loading ? (
+                              <span className="text-xs italic text-white/60">Memuat...</span>
+                            ) : (
+                              menuFilters.kabupaten.map((a) => (
+                                <label key={a} className="flex items-center gap-3 cursor-pointer">
+                                  <input type="checkbox" checked={filterAsal.includes(a)} onChange={() => handleToggleAsal(a)} className="w-5 h-5 accent-[#111] rounded-sm cursor-pointer" /> {a}
+                                </label>
+                              ))
+                            )}
                          </div>
                        </div>
 
@@ -235,11 +255,15 @@ const UserDashboard: React.FC = () => {
                        <div>
                          <h4 className="font-bold text-[#111] text-[18px] mb-3">Perizinan</h4>
                          <div className="grid grid-cols-2 gap-y-3 gap-x-3 text-[14px] font-medium text-white">
-                            {menuFilters.perizinan.map((p) => (
-                              <label key={p} className="flex items-center gap-3 cursor-pointer">
-                                <input type="checkbox" checked={filterPerizinan.includes(p)} onChange={() => handleTogglePerizinan(p)} className="w-5 h-5 accent-[#111] rounded-sm cursor-pointer" /> {p}
-                              </label>
-                            ))}
+                            {loading ? (
+                              <span className="text-xs italic text-white/60">Memuat...</span>
+                            ) : (
+                              menuFilters.perizinan.map((p) => (
+                                <label key={p} className="flex items-center gap-3 cursor-pointer">
+                                  <input type="checkbox" checked={filterPerizinan.includes(p)} onChange={() => handleTogglePerizinan(p)} className="w-5 h-5 accent-[#111] rounded-sm cursor-pointer" /> {p}
+                                </label>
+                              ))
+                            )}
                          </div>
                        </div>
                     </div>
@@ -248,51 +272,64 @@ const UserDashboard: React.FC = () => {
            </div>
 
             {/* Layout Grid Katalog Dinamis */}
-            <div className={`transition-all duration-500 ease-in-out grid gap-8 sm:gap-10 justify-items-center justify-center mb-16 w-full max-w-[1400px] mx-auto mt-[100px] sm:mt-0
-               ${isFilterOpen ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 lg:pr-[360px]' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4'}
-            `}>
-               {currentCards.length > 0 ? (
-                  currentCards.map((item, idx) => (
-                    <div 
-                      key={item.id_jamu || idx} 
-                      className="hide-animate bg-[#eef6ec] w-full max-w-[340px] rounded-[20px] p-4 shadow-lg flex flex-col items-center hover:-translate-y-2 hover:shadow-2xl cursor-pointer transition-all duration-300 border border-green-100" 
-                      style={{transitionDelay: `${idx * 0.05}s`}}
-                      onClick={() => handleCardClick(item)}
-                    >
-                      <div className="w-full aspect-[4/5] bg-gradient-to-b from-yellow-100 to-orange-400 rounded-2xl shadow-inner overflow-hidden mb-6 relative flex flex-col items-center justify-center p-2 text-center border-[4px] border-orange-300">
-                         {item.image ? (
-                            <img 
-                              src={`http://localhost:5000/static/uploads/${item.image}`} 
-                              alt={item.nama_jamu} 
-                              className="w-full h-full object-cover rounded-xl"
-                            />
-                         ) : (
-                            <>
-                              <span className="text-red-600 font-black text-[22px] leading-tight mb-2 uppercase px-2">{item.nama_jamu}</span>
-                              <span className="text-red-600 font-black text-[14px] leading-tight mb-4 uppercase">{item.nama_jenis || 'Tradisional'}</span>
-                            </>
-                         )}
+            <div className="w-full max-w-[1400px] mx-auto mt-[100px] sm:mt-0 min-h-[350px] flex items-center justify-center flex-col">
+              {loading ? (
+                /* --- KONDISI LOADING ANIMATION (HERBAL SPINNER) --- */
+                <div className="flex flex-col items-center justify-center py-20 gap-4">
+                  <div className="w-16 h-16 animate-spin rounded-full border-4 border-gray-200 border-t-[#34C759]"></div>
+                  <p className="text-lg font-serif italic text-gray-800 animate-pulse tracking-wide font-medium">
+                    Memuat katalog produk Jamu Madura pilihan...
+                  </p>
+                </div>
+              ) : (
+                /* --- GRID KARTU JAMU --- */
+                <div className={`transition-all duration-500 ease-in-out grid gap-8 sm:gap-10 justify-items-center justify-center mb-16 w-full
+                   ${isFilterOpen ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 lg:pr-[360px]' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4'}
+                `}>
+                   {currentCards.length > 0 ? (
+                      currentCards.map((item, idx) => (
+                        <div 
+                          key={item.id_jamu || idx} 
+                          className="hide-animate bg-[#eef6ec] w-full max-w-[340px] rounded-[20px] p-4 shadow-lg flex flex-col items-center hover:-translate-y-2 hover:shadow-2xl cursor-pointer transition-all duration-300 border border-green-100" 
+                          style={{transitionDelay: `${idx * 0.03}s`}}
+                          onClick={() => handleCardClick(item)}
+                        >
+                          <div className="w-full aspect-[4/5] bg-gradient-to-b from-yellow-100 to-orange-400 rounded-2xl shadow-inner overflow-hidden mb-6 relative flex flex-col items-center justify-center p-2 text-center border-[4px] border-orange-300">
+                             {item.image ? (
+                                <img 
+                                  src={`http://localhost:5000/static/uploads/${item.image}`} 
+                                  alt={item.nama_jamu} 
+                                  className="w-full h-full object-cover rounded-xl"
+                                />
+                             ) : (
+                                <>
+                                  <span className="text-red-600 font-black text-[22px] leading-tight mb-2 uppercase px-2">{item.nama_jamu}</span>
+                                  <span className="text-red-600 font-black text-[14px] leading-tight mb-4 uppercase">{item.nama_jenis || 'Tradisional'}</span>
+                                </>
+                             )}
+                          </div>
+                          
+                          <div className="w-full text-center flex-grow flex flex-col justify-between">
+                             <div>
+                                <h3 className="text-gray-900 font-bold text-[22px] mb-2 truncate w-full px-2 capitalize">{item.nama_jamu}</h3>
+                                <p className="text-gray-600 text-[16px] font-semibold mb-3 uppercase tracking-wide">{item.nama_jenis || "Jamu Madura"}</p>
+                                <span className="inline-block px-4 py-1 bg-green-100 text-green-800 text-[14px] font-bold italic rounded-full shadow-sm">{item.nama_kabupaten || "Lokal"}</span>
+                             </div>
+                          </div>
+                       </div>
+                      ))
+                   ) : (
+                      <div className="col-span-full py-28 text-center text-gray-500 font-medium text-xl italic">
+                         Tidak ada jamu yang sesuai dengan filter pilihan, Bang.
                       </div>
-                      
-                      <div className="w-full text-center flex-grow flex flex-col justify-between">
-                         <div>
-                            <h3 className="text-gray-900 font-bold text-[22px] mb-2 truncate w-full px-2 capitalize">{item.nama_jamu}</h3>
-                            <p className="text-gray-600 text-[16px] font-semibold mb-3 uppercase tracking-wide">{item.nama_jenis || "Jamu Madura"}</p>
-                            <span className="inline-block px-4 py-1 bg-green-100 text-green-800 text-[14px] font-bold italic rounded-full shadow-sm">{item.nama_kabupaten || "Lokal"}</span>
-                         </div>
-                      </div>
-                   </div>
-                  ))
-               ) : (
-                  <div className="col-span-full py-28 text-center text-gray-500 font-medium text-xl italic">
-                     Tidak ada jamu yang sesuai dengan filter pilihan, Bang.
-                  </div>
-               )}
-           </div>
+                   )}
+                </div>
+              )}
+            </div>
 
             {/* PAGINATION DYNAMIS */}
-            {totalPages > 1 && (
-               <div className="flex justify-center mt-16 mb-20 w-full z-20 relative hide-animate" style={{transitionDelay: '0.2s'}}>
+            {!loading && totalPages > 1 && (
+               <div className="flex justify-center mt-16 mb-20 w-full z-20 relative hide-animate" style={{transitionDelay: '0.1s'}}>
                  <div className="flex items-start font-serif text-[44px] md:text-[56px] font-bold text-[#34C759] select-none">
                     <button 
                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
