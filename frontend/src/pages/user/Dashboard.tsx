@@ -16,6 +16,9 @@ const UserDashboard: React.FC = () => {
   const [keluhan, setKeluhan] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
+  // URL Base backend Vercel online untuk load gambar
+  const BASE_BACKEND_URL = 'https://e-catalougue-jamu-madura.vercel.app';
+
   // State Penampung Data Utama
   const [dataJamu, setDataJamu] = useState<any[]>([]);
   
@@ -46,7 +49,7 @@ const UserDashboard: React.FC = () => {
   useEffect(() => {
     const memuatSemuaData = async () => {
       try {
-        setLoading(true); // Aktifkan loading sebelum hit API
+        setLoading(true); 
         const [hasilKatalog, hasilFilter] = await Promise.all([
           fetchKatalogJamuPublik(),
           fetchFilterOptionsPublik()
@@ -57,7 +60,7 @@ const UserDashboard: React.FC = () => {
       } catch (error) {
         console.error("Gagal memuat data publik:", error);
       } finally {
-        setLoading(false); // Matikan loading setelah data sukses masuk
+        setLoading(false); 
       }
     };
     memuatSemuaData();
@@ -99,7 +102,7 @@ const UserDashboard: React.FC = () => {
 
   // Efek untuk animasi scroll-in (Intersection Observer)
   useEffect(() => {
-    if (loading) return; // Jangan jalankan observer jika data masih dimuat
+    if (loading) return; 
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
@@ -179,7 +182,8 @@ const UserDashboard: React.FC = () => {
               className="flex-grow bg-transparent border-none text-white placeholder-gray-300 px-6 text-[18px] sm:text-[20px] focus:outline-none focus:ring-0"
               placeholder="Masukkan keluhan Anda disini yeah :)"
               value={keluhan}
-              onChange={(e) => setFilterJenis([e.target.value])} // Disesuaikan atau biarkan setKeluhan
+              // ✅ DIKEMBALIKAN KE FUNGSI ASLINYA BIAR INPUT KELUHAN JALAN NORMAL
+              onChange={(e) => setKeluhan(e.target.value)} 
             />
           </form>
         </main>
@@ -274,7 +278,6 @@ const UserDashboard: React.FC = () => {
             {/* Layout Grid Katalog Dinamis */}
             <div className="w-full max-w-[1400px] mx-auto mt-[100px] sm:mt-0 min-h-[350px] flex items-center justify-center flex-col">
               {loading ? (
-                /* --- KONDISI LOADING ANIMATION (HERBAL SPINNER) --- */
                 <div className="flex flex-col items-center justify-center py-20 gap-4">
                   <div className="w-16 h-16 animate-spin rounded-full border-4 border-gray-200 border-t-[#34C759]"></div>
                   <p className="text-lg font-serif italic text-gray-800 animate-pulse tracking-wide font-medium">
@@ -282,7 +285,6 @@ const UserDashboard: React.FC = () => {
                   </p>
                 </div>
               ) : (
-                /* --- GRID KARTU JAMU --- */
                 <div className={`transition-all duration-500 ease-in-out grid gap-8 sm:gap-10 justify-items-center justify-center mb-16 w-full
                    ${isFilterOpen ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 lg:pr-[360px]' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4'}
                 `}>
@@ -297,7 +299,8 @@ const UserDashboard: React.FC = () => {
                           <div className="w-full aspect-[4/5] bg-gradient-to-b from-yellow-100 to-orange-400 rounded-2xl shadow-inner overflow-hidden mb-6 relative flex flex-col items-center justify-center p-2 text-center border-[4px] border-orange-300">
                              {item.image ? (
                                 <img 
-                                  src={`http://localhost:5000/static/uploads/${item.image}`} 
+                                  // ✅ DIUBAH MENEMBAK BASE URL CLOUD VERCEL
+                                  src={`${BASE_BACKEND_URL}/static/uploads/${item.image}`} 
                                   alt={item.nama_jamu} 
                                   className="w-full h-full object-cover rounded-xl"
                                 />
