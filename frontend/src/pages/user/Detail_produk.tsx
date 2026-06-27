@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+// 1. Import instance 'api' kustom kita yang mengarah ke Vercel online
+import api from '../../api/axiosConfig'; 
 
 export interface ProductDetailProps {
   isOpen: boolean;
@@ -12,12 +14,16 @@ const DetailProduk: React.FC<ProductDetailProps> = ({ isOpen, onClose, product }
   const [rekomendasiTerkait, setRekomendasiTerkait] = useState<any[]>([]);
   const [loadingTerkait, setLoadingTerkait] = useState<boolean>(false);
 
-  // --- FUNGSI AMBIL DATA DETAIL + SARAN TERKAIT DARI BACKEND ---
+  // URL base untuk memanggil gambar yang tersimpan di static uploads Flask Vercel
+  const BASE_BACKEND_URL = 'https://e-catalougue-jamu-madura.vercel.app';
+
+  // --- FUNGSI AMBIL DATA DETAIL + SARAN TERKAIT DARI BACKEND ONLINE ---
   const muatDetailDanSaran = async (idJamu: number) => {
     setLoadingTerkait(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/jamu/${idJamu}`);
-      const jsonResult = await response.json();
+      // 2. Ubah fetch lokal menjadi api.get kustom Axios
+      const response = await api.get(`/jamu/${idJamu}`);
+      const jsonResult = response.data;
       
       if (jsonResult.status === 'success') {
         setCurrentProduct(jsonResult.data);
@@ -25,12 +31,12 @@ const DetailProduk: React.FC<ProductDetailProps> = ({ isOpen, onClose, product }
       }
     } catch (error) {
       console.error("Gagal memuat jamu terkait:", error);
-    } finally {
+    } file {
       setLoadingTerkait(false);
     }
   };
 
-  // Triger fungsi ketika modal dibuka pertama kali membawa properti dari katalog luar
+  // Trigger fungsi ketika modal dibuka pertama kali membawa properti dari katalog luar
   useEffect(() => {
     if (isOpen && product?.id_jamu) {
       muatDetailDanSaran(product.id_jamu);
@@ -81,7 +87,8 @@ const DetailProduk: React.FC<ProductDetailProps> = ({ isOpen, onClose, product }
                <div className="mt-8 w-full flex-grow flex items-center justify-center">
                   {currentProduct.image ? (
                      <img 
-                       src={`http://localhost:5000/static/uploads/${currentProduct.image}`} 
+                       /* 3. Ganti endpoint gambar utama ke domain Vercel */
+                       src={`${BASE_BACKEND_URL}/static/uploads/${currentProduct.image}`} 
                        alt={currentProduct.nama_jamu} 
                        className="w-full aspect-square max-w-[320px] object-cover rounded-[24px] shadow-lg border-[4px] border-orange-300"
                        onError={(e) => {
@@ -203,7 +210,8 @@ const DetailProduk: React.FC<ProductDetailProps> = ({ isOpen, onClose, product }
                            <div className="w-full aspect-square rounded-xl overflow-hidden bg-orange-100 border border-orange-200 mb-2 shrink-0">
                               {itemRelated.image ? (
                                  <img 
-                                    src={`http://localhost:5000/static/uploads/${itemRelated.image}`} 
+                                    /* 4. Ganti endpoint gambar rekomendasi ke domain Vercel */
+                                    src={`${BASE_BACKEND_URL}/static/uploads/${itemRelated.image}`} 
                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
                                     alt={itemRelated.nama_jamu}
                                  />
