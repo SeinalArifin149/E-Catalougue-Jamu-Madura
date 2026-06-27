@@ -5,12 +5,18 @@ import FooterUser from '../../components/footer_user';
 import DetailProduk from './Detail_produk';
 import bgImageLeft from './Background hadap kiri.png';
 
+// 1. Import instance 'api' kustom kita yang memegang kendali base URL Vercel online
+import api from '../../api/axiosConfig'; 
+
 const Recommendation: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
   // 🎯 TANGKAP TEKS KELUHAN YANG DIKIRIM DARI DASHBOARD UTAMA
   const kataKunciAwal = location.state?.pencarian || "";
+
+  // URL Base backend Vercel online untuk load gambar statis
+  const BASE_BACKEND_URL = 'https://e-catalougue-jamu-madura.vercel.app';
 
   // State Modal Detail Produk
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -28,7 +34,7 @@ const Recommendation: React.FC = () => {
   const [prediksiLabel, setPrediksiLabel] = useState<string>("");
   const [confidence, setConfidence] = useState<number | null>(null);
 
-  // 🛰️ FUNGSI HIT API BACKEND FLASK UNTUK MENDAPATKAN REKOMENDASI ML
+  // 🛰️ FUNGSI HIT API BACKEND FLASK UNTUK MENDAPATKAN REKOMENDASI ML ONLINE
   const ambilRekomendasiML = async (queryTeks: string, skipCorrection: boolean = false) => {
     if (!queryTeks.trim()) return;
     
@@ -37,18 +43,13 @@ const Recommendation: React.FC = () => {
       setSuggestion(null); // Reset suggestion saat mencari baru
     }
     try {
-      const response = await fetch('http://localhost:5000/api/jamu/recommend', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          keluhan: queryTeks,
-          skip_correction: skipCorrection
-        }),
+      // 2. Ubah fetch manual localhost menjadi api.post kustom Axios
+      const response = await api.post('/jamu/recommend', { 
+        keluhan: queryTeks,
+        skip_correction: skipCorrection
       });
       
-      const jsonResult = await response.json();
+      const jsonResult = response.data; // Axios otomatis mengonversi JSON
       
       if (jsonResult.status === 'success') {
         setDataRekomendasi(jsonResult.data || []);
@@ -113,7 +114,7 @@ const Recommendation: React.FC = () => {
           {/* TOP SECTION: JUDUL HALAMAN & KAPSUL PENCARIAN */}
           <div className="flex flex-col sm:flex-row justify-between items-center mb-16 gap-6 animate-[slideDownFade_0.8s_ease-out_forwards]">
             <h1 className="text-[36px] sm:text-[42px] font-bold font-serif text-[#222] tracking-tight">
-              Hasil Pencaharian
+              Hasil Pencarian
             </h1>
             
             {/* Search Input Kapsul */}
@@ -284,7 +285,8 @@ const Recommendation: React.FC = () => {
                       <div className="w-full aspect-[4/5] bg-gradient-to-b from-yellow-100 to-orange-400 rounded-2xl shadow-inner overflow-hidden mb-4 relative flex flex-col items-center justify-center p-2 text-center border-[3px] border-orange-300">
                          {item.image ? (
                             <img 
-                              src={`http://localhost:5000/static/uploads/${item.image}`} 
+                              // ✅ 3. DIUBAH MENEMBAK IMAGE STATIC KE VERCEL ONLINE CLOUD
+                              src={`${BASE_BACKEND_URL}/static/uploads/${item.image}`} 
                               alt={item.nama_jamu} 
                               className="w-full h-full object-cover rounded-xl"
                             />
