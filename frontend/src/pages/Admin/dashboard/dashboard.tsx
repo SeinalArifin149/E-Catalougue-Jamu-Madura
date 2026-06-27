@@ -9,24 +9,32 @@ export default function Dashboard() {
 
   // State untuk menampung list jamu asli dari database
   const [dataJamu, setDataJamu] = useState<any[]>([]);
+  
+  // --- STATE LOADING TAMBAHAN ---
+  const [loading, setLoading] = useState<boolean>(true);
 
   // --- STATE FILTER & SEARCH ---
   const [searchNama, setSearchNama] = useState<string>(""); 
   const [filterJenis, setFilterJenis] = useState<string[]>([]);
-  const [filterKabupaten, setFilterKabupaten] = useState<string[]>(["sampang"]);
+  const [filterKabupaten, setFilterKabupaten] = useState<string[]>([]); // Default dikosongkan agar semua langsung muncul di awal
   const [filterPerizinan, setFilterPerizinan] = useState<string[]>([]);
 
   // --- FUNGSI AMBIL DATA ---
   const ambilDataJamu = async () => {
     try {
+      setLoading(true); // Set loading aktif sebelum fetch data
       const response = await api.get("/jamu");
       
       console.log("=== CEK ISI DATA JAMU DARI FLASK ===");
       console.log(response.data.data);
       
-      setDataJamu(response.data.data);
+      // Menyesuaikan struktur return data Flask Anda (pastikan response.data atau response.data.data)
+      const listJamu = Array.isArray(response.data) ? response.data : response.data.data || [];
+      setDataJamu(listJamu);
     } catch (error) {
       console.error("Gagal narik data jamu:", error);
+    } finally {
+      setLoading(false); // Matikan loading setelah selesai (sukses/gagal)
     }
   };
   
@@ -89,12 +97,10 @@ export default function Dashboard() {
 
   // --- PROSES PENYARINGAN REAL-TIME ---
   const dataJamuTersering = dataJamu.filter((item) => {
-    // 1. Cocokkan Search Nama Jamu
     const cocokNama = item.nama_jamu 
       ? item.nama_jamu.toLowerCase().includes(searchNama.toLowerCase()) 
       : true;
 
-    // 2. Cocokkan Filter Checkbox
     const cocokJenis = filterJenis.length > 0 ? filterJenis.includes(item.nama_jenis) : true;
     const cocokKabupaten = filterKabupaten.length > 0 ? filterKabupaten.includes(item.nama_kabupaten) : true;
     const cocokPerizinan = filterPerizinan.length > 0 ? filterPerizinan.includes(item.nama_perizinan) : true;
@@ -135,7 +141,7 @@ export default function Dashboard() {
           {/* Info Total Jamu Terfilter */}
           <div className="px-5 mt-4">
             <p className="text-[12px] font-bold text-gray-700">
-              Menampilkan: <span className="text-[#D68227] font-extrabold">{dataJamuTersering.length}</span> / {dataJamu.length} Jamu
+              Menampilkan: <span className="text-[#D68227] font-extrabold">{loading ? "..." : dataJamuTersering.length}</span> / {loading ? "..." : dataJamu.length} Jamu
             </p>
           </div>
 
@@ -172,17 +178,21 @@ export default function Dashboard() {
             <div className="flex flex-col gap-1.5">
               <label className="text-[11px] font-bold text-gray-700">Jenis Jamu</label>
               <div className="max-h-24 overflow-y-auto border border-[#E5DECD] bg-white rounded-lg p-2 flex flex-col gap-1 shadow-inner">
-                {daftarJenisUnik.map((jenis) => (
-                  <label key={jenis} className="flex items-center gap-2 text-xs text-black cursor-pointer py-0.5 hover:bg-gray-50 px-1 rounded">
-                    <input
-                      type="checkbox"
-                      checked={filterJenis.includes(jenis)}
-                      onChange={() => handleToggleFilterJenis(jenis)}
-                      className="rounded border-gray-300 text-[#D68227] focus:ring-0 w-3.5 h-3.5"
-                    />
-                    <span className="truncate">{jenis}</span>
-                  </label>
-                ))}
+                {loading ? (
+                  <span className="text-[10px] text-gray-400 italic">Memuat...</span>
+                ) : (
+                  daftarJenisUnik.map((jenis) => (
+                    <label key={jenis} className="flex items-center gap-2 text-xs text-black cursor-pointer py-0.5 hover:bg-gray-50 px-1 rounded">
+                      <input
+                        type="checkbox"
+                        checked={filterJenis.includes(jenis)}
+                        onChange={() => handleToggleFilterJenis(jenis)}
+                        className="rounded border-gray-300 text-[#D68227] focus:ring-0 w-3.5 h-3.5"
+                      />
+                      <span className="truncate">{jenis}</span>
+                    </label>
+                  ))
+                )}
               </div>
             </div>
 
@@ -190,17 +200,21 @@ export default function Dashboard() {
             <div className="flex flex-col gap-1.5">
               <label className="text-[11px] font-bold text-gray-700">Asal (Kabupaten)</label>
               <div className="max-h-24 overflow-y-auto border border-[#E5DECD] bg-white rounded-lg p-2 flex flex-col gap-1 shadow-inner">
-                {daftarKabupatenUnik.map((kab) => (
-                  <label key={kab} className="flex items-center gap-2 text-xs text-black cursor-pointer py-0.5 hover:bg-gray-50 px-1 rounded">
-                    <input
-                      type="checkbox"
-                      checked={filterKabupaten.includes(kab)}
-                      onChange={() => handleToggleFilterKabupaten(kab)}
-                      className="rounded border-gray-300 text-[#D68227] focus:ring-0 w-3.5 h-3.5"
-                    />
-                    <span className="truncate">{kab}</span>
-                  </label>
-                ))}
+                {loading ? (
+                  <span className="text-[10px] text-gray-400 italic">Memuat...</span>
+                ) : (
+                  daftarKabupatenUnik.map((kab) => (
+                    <label key={kab} className="flex items-center gap-2 text-xs text-black cursor-pointer py-0.5 hover:bg-gray-50 px-1 rounded">
+                      <input
+                        type="checkbox"
+                        checked={filterKabupaten.includes(kab)}
+                        onChange={() => handleToggleFilterKabupaten(kab)}
+                        className="rounded border-gray-300 text-[#D68227] focus:ring-0 w-3.5 h-3.5"
+                      />
+                      <span className="truncate">{kab}</span>
+                    </label>
+                  ))
+                )}
               </div>
             </div>
 
@@ -208,17 +222,21 @@ export default function Dashboard() {
             <div className="flex flex-col gap-1.5">
               <label className="text-[11px] font-bold text-gray-700">Perizinan</label>
               <div className="max-h-24 overflow-y-auto border border-[#E5DECD] bg-white rounded-lg p-2 flex flex-col gap-1 shadow-inner">
-                {daftarPerizinanUnik.map((izin) => (
-                  <label key={izin} className="flex items-center gap-2 text-xs text-black cursor-pointer py-0.5 hover:bg-gray-50 px-1 rounded">
-                    <input
-                      type="checkbox"
-                      checked={filterPerizinan.includes(izin)}
-                      onChange={() => handleToggleFilterPerizinan(izin)}
-                      className="rounded border-gray-300 text-[#D68227] focus:ring-0 w-3.5 h-3.5"
-                    />
-                    <span className="truncate">{izin}</span>
-                  </label>
-                ))}
+                {loading ? (
+                  <span className="text-[10px] text-gray-400 italic">Memuat...</span>
+                ) : (
+                  daftarPerizinanUnik.map((izin) => (
+                    <label key={izin} className="flex items-center gap-2 text-xs text-black cursor-pointer py-0.5 hover:bg-gray-50 px-1 rounded">
+                      <input
+                        type="checkbox"
+                        checked={filterPerizinan.includes(izin)}
+                        onChange={() => handleToggleFilterPerizinan(izin)}
+                        className="rounded border-gray-300 text-[#D68227] focus:ring-0 w-3.5 h-3.5"
+                      />
+                      <span className="truncate">{izin}</span>
+                    </label>
+                  ))
+                )}
               </div>
             </div>
 
@@ -267,88 +285,98 @@ export default function Dashboard() {
               </button>
             </div>
 
-            {/* GRID DATA JAMU */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {dataJamuTersering.length > 0 ? (
-                dataJamuTersering.map((item) => (
-                  <div
-                    key={item.id_jamu}
-                    className="bg-[#FCE6CF] rounded-xl pt-6 pb-4 px-4 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col gap-4 border border-[#F0D5BB]"
-                  >
-                    {/* Header Card */}
-                    <div className="flex items-center gap-3">
-                      <div className="w-14 h-14 rounded-full overflow-hidden bg-[#344F51] flex items-center justify-center shrink-0">
-                        {item.image ? (
-                          <img
-                            src={`http://localhost:5000/static/uploads/${item.image}`}
-                            alt={item.nama_jamu}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).onerror = null;
-                              (e.target as HTMLImageElement).src = "https://via.placeholder.com/150?text=No+Image";
-                            }}
-                          />
-                        ) : (
-                          <span className="text-white text-2xl font-bold">
-                            {item.nama_jamu ? item.nama_jamu.charAt(0) : "J"}
+            {/* IMPLEMENTASI ANIMASI LOADING & GRID DATA */}
+            {loading ? (
+              /* --- ANIMASI SPINNER LOADING NYENTRIK --- */
+              <div className="flex flex-col items-center justify-center py-32 gap-4">
+                <div className="relative w-14 h-14 animate-spin rounded-full border-4 border-[#FCE6CF] border-t-[#344F51]"></div>
+                <p className="text-sm font-medium italic text-gray-500 tracking-wide animate-pulse">
+                   Memuat jamu Madura...
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {dataJamuTersering.length > 0 ? (
+                  dataJamuTersering.map((item) => (
+                    <div
+                      key={item.id_jamu}
+                      className="bg-[#FCE6CF] rounded-xl pt-6 pb-4 px-4 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col gap-4 border border-[#F0D5BB]"
+                    >
+                      {/* Header Card */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-14 h-14 rounded-full overflow-hidden bg-[#344F51] flex items-center justify-center shrink-0">
+                          {item.image ? (
+                            <img
+                              // Ganti localhost ke base URL axiosConfig Anda agar dinamis di Vercel nanti
+                              src={`${api.defaults.baseURL?.replace('/api', '')}/static/uploads/${item.image}`}
+                              alt={item.nama_jamu}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).onerror = null;
+                                (e.target as HTMLImageElement).src = "https://via.placeholder.com/150?text=No+Image";
+                              }}
+                            />
+                          ) : (
+                            <span className="text-white text-2xl font-bold">
+                              {item.nama_jamu ? item.nama_jamu.charAt(0) : "J"}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-col flex-1 overflow-hidden">
+                          <span className="font-bold text-[15px] text-black truncate font-serif leading-tight">
+                            {item.nama_jamu}
                           </span>
-                        )}
+                          <span className="text-[10px] text-gray-700 italic">
+                            {item.nama_jenis || "Tanpa Jenis"} • {item.nama_kabupaten || "Lokal"}
+                          </span>
+                          <span className="text-[9px] mt-0.5 font-bold text-emerald-800 uppercase bg-emerald-100 px-1.5 py-0.5 rounded self-start">
+                            Izin: {item.nama_perizinan || "Tanpa Izin"}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex flex-col flex-1 overflow-hidden">
-                        {/* 🔥 FIX: Tag penutup kurung siku penutup sudah ditambahkan di sini */}
-                        <span className="font-bold text-[15px] text-black truncate font-serif leading-tight">
-                          {item.nama_jamu}
-                        </span>
-                        <span className="text-[10px] text-gray-700 italic">
-                          {item.nama_jenis || "Tanpa Jenis"} • {item.nama_kabupaten || "Lokal"}
-                        </span>
-                        <span className="text-[9px] mt-0.5 font-bold text-emerald-800 uppercase bg-emerald-100 px-1.5 py-0.5 rounded self-start">
-                          Izin: {item.nama_perizinan || "Tanpa Izin"}
-                        </span>
+
+                      {/* Khasiat Singkat */}
+                      <div className="bg-white/50 p-2 rounded border border-orange-200 min-h-[50px]">
+                          <p className="text-[11px] text-gray-800 line-clamp-3">
+                              <span className="font-semibold">Khasiat:</span> {item.khasiat || "Belum ada keterangan."}
+                          </p>
+                      </div>
+
+                      {/* Tombol Aksi */}
+                      <div className="flex justify-center gap-2 mt-auto pt-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigate(`/admin/edit-jamu/${item.id_jamu}`);
+                          }}
+                          className="bg-[#FFD700] hover:bg-[#E6C200] text-black text-[10px] font-bold py-1.5 px-3 rounded flex items-center gap-1 transition"
+                        >
+                          EDIT
+                        </button>
+                        <button
+                          onClick={() => handleHapus(item.id_jamu)}
+                          className="bg-[#A52A2A] hover:bg-[#8B2323] text-white text-[10px] font-bold py-1.5 px-3 rounded transition"
+                        >
+                          HAPUS
+                        </button>
                       </div>
                     </div>
-
-                    {/* Khasiat Singkat */}
-                    <div className="bg-white/50 p-2 rounded border border-orange-200 min-h-[50px]">
-                        <p className="text-[11px] text-gray-800 line-clamp-3">
-                            <span className="font-semibold">Khasiat:</span> {item.khasiat || "Belum ada keterangan."}
-                        </p>
-                    </div>
-
-                    {/* Tombol Aksi */}
-                    <div className="flex justify-center gap-2 mt-auto pt-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigate(`/admin/edit-jamu/${item.id_jamu}`);
-                        }}
-                        className="bg-[#FFD700] hover:bg-[#E6C200] text-black text-[10px] font-bold py-1.5 px-3 rounded flex items-center gap-1 transition"
-                      >
-                        EDIT
-                      </button>
-                      <button
-                        onClick={() => handleHapus(item.id_jamu)}
-                        className="bg-[#A52A2A] hover:bg-[#8B2323] text-white text-[10px] font-bold py-1.5 px-3 rounded transition"
-                      >
-                        HAPUS
-                      </button>
-                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-full flex flex-col items-center py-20 text-gray-400">
+                    <svg className="w-16 h-16 mb-4 opacity-20" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z" />
+                      <path fillRule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clipRule="evenodd" />
+                    </svg>
+                    <p className="font-medium italic text-center text-sm">
+                      {dataJamu.length > 0 
+                        ? "Tidak ada jamu yang cocok dengan kriteria kombinasi filter, Bang." 
+                        : "Database masih kosong, Bang. Yuk tambah jamu dulu!"}
+                    </p>
                   </div>
-                ))
-              ) : (
-                <div className="col-span-full flex flex-col items-center py-20 text-gray-400">
-                  <svg className="w-16 h-16 mb-4 opacity-20" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z" />
-                    <path fillRule="evenodd" d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" clipRule="evenodd" />
-                  </svg>
-                  <p className="font-medium italic text-center text-sm">
-                    {dataJamu.length > 0 
-                      ? "Tidak ada jamu yang cocok dengan kriteria kombinasi filter, Bang." 
-                      : "Database masih kosong, Bang. Yuk tambah jamu dulu!"}
-                  </p>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </div>
         </main>
       </div>
