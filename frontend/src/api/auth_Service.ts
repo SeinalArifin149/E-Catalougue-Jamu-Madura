@@ -1,25 +1,19 @@
+// 1. Import instance axios kustom milik Abang yang sudah mengarah ke Vercel
+import api from "./axiosConfig"; 
 
-const API_URL = 'http://localhost:5000/api';
-
-export const loginadmin = async(username:string,password:string) => {
+export const loginadmin = async (username: string, password: string) => {
     try {
-       const response = await fetch(`${API_URL}/4dm13n`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username, password }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok){
-
-        throw new Error(data.message || "No miras no miras")
-    }
-    return data;
+        // 2. Langsung pakai api.post, otomatis URL-nya jadi ke Vercel online
+        const response = await api.post("/4dm13n", { username, password });
+        
+        // 3. Axios otomatis parse JSON, jadi datanya tinggal diambil dari response.data
+        return response.data;
     }
     catch (error: any) {
-        throw new Error (error.message);
+        // 4. Tangkap error response dari Flask (seperti password/username salah)
+        if (error.response && error.response.data) {
+            throw new Error(error.response.data.message || "No miras no miras");
+        }
+        throw new Error(error.message || "Gagal terhubung ke server.");
     }
 }
