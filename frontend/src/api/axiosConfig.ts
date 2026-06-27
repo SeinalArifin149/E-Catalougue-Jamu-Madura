@@ -1,7 +1,8 @@
 import axios from 'axios'
 
 const api = axios.create({
-    baseURL: 'http://localhost:5000/api',
+    // 👇 CUKUP GANTI BARIS INI SAJA, BANG 👇
+    baseURL: 'https://e-catalougue-jamu-madura.vercel.app/api', 
 })
 
 api.interceptors.request.use(
@@ -26,18 +27,15 @@ api.interceptors.response.use(
     (error) => {
         if (error.response && error.response.status === 401){
             
-            // 👇 TAMBAHANNYA DI SINI BANG 👇
-            // Kalau errornya pas lagi nembak URL login, biarin aja!
-            // Jangan ditendang ke "/", biar komponen Login nampilin pesan errornya.
+            // Trik cerdas Abang biar gak mental pas salah input password login
             if (error.config && error.config.url === '/4dm13n') {
                 return Promise.reject(error);
             }
-            // 👆 ======================= 👆
 
             const token = localStorage.getItem('token_jamu')
 
             if (token) {
-                alert ("sesi telah habis,silalhkan kembali")
+                alert ("Sesi telah habis, silahkan login kembali.")
                 localStorage.removeItem('token_jamu')
                 window.location.href = "/4dm13n"
             } else {
