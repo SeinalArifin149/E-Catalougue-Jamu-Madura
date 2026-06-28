@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-// 1. Import instance 'api' kustom kita yang mengarah ke Vercel online
+// Import instance 'api' kustom kita yang mengarah ke Vercel online
 import api from '../../api/axiosConfig'; 
 
 export interface ProductDetailProps {
@@ -21,7 +21,7 @@ const DetailProduk: React.FC<ProductDetailProps> = ({ isOpen, onClose, product }
   const muatDetailDanSaran = async (idJamu: number) => {
     setLoadingTerkait(true);
     try {
-      // 2. Ubah fetch lokal menjadi api.get kustom Axios
+      // Ubah fetch lokal menjadi api.get kustom Axios
       const response = await api.get(`/jamu/${idJamu}`);
       const jsonResult = response.data;
       
@@ -31,7 +31,7 @@ const DetailProduk: React.FC<ProductDetailProps> = ({ isOpen, onClose, product }
       }
     } catch (error) {
       console.error("Gagal memuat jamu terkait:", error);
-    } file {
+    } finally { // ✅ DIKOREKSI DARI 'file' MENJADI 'finally'
       setLoadingTerkait(false);
     }
   };
@@ -87,7 +87,7 @@ const DetailProduk: React.FC<ProductDetailProps> = ({ isOpen, onClose, product }
                <div className="mt-8 w-full flex-grow flex items-center justify-center">
                   {currentProduct.image ? (
                      <img 
-                       /* 3. Ganti endpoint gambar utama ke domain Vercel */
+                       /* Ganti endpoint gambar utama ke domain Vercel */
                        src={`${BASE_BACKEND_URL}/static/uploads/${currentProduct.image}`} 
                        alt={currentProduct.nama_jamu} 
                        className="w-full aspect-square max-w-[320px] object-cover rounded-[24px] shadow-lg border-[4px] border-orange-300"
@@ -101,7 +101,7 @@ const DetailProduk: React.FC<ProductDetailProps> = ({ isOpen, onClose, product }
                          <span className="text-red-600 font-black text-[20px] leading-tight mb-1 uppercase break-words w-full px-2">
                            {currentProduct.nama_jamu}
                          </span>
-                         <span className="text-red-600 font-black text-[13px] leading-tight mb-4 uppercase">
+                         <span className="text-red-600 font-black text-[13px] font-black leading-tight mb-4 uppercase">
                            {currentProduct.nama_jenis || 'Tradisional'}
                          </span>
                          <div className="w-16 h-24 bg-black rounded-xl flex flex-col items-center justify-center border-2 border-yellow-500 shadow-xl shrink-0">
@@ -187,7 +187,7 @@ const DetailProduk: React.FC<ProductDetailProps> = ({ isOpen, onClose, product }
             </div>
          </div>
 
-         {/* 🔥 BAWAH: SARAN JAMU TERKAIT LAINNYA (SINKRON COSINE SIMILARITY ML) */}
+         {/* 🔥 BAWAH: SARAN JAMU TERKAIT LAINNYA */}
          <div className="w-full border-t border-gray-400/60 pt-6 mt-2">
             <h3 className="text-[14px] font-bold text-[#222] mb-4 tracking-wide uppercase flex items-center gap-2">
                🌿 Saran Jamu Lainnya (Khasiat Serupa) :
@@ -210,7 +210,7 @@ const DetailProduk: React.FC<ProductDetailProps> = ({ isOpen, onClose, product }
                            <div className="w-full aspect-square rounded-xl overflow-hidden bg-orange-100 border border-orange-200 mb-2 shrink-0">
                               {itemRelated.image ? (
                                  <img 
-                                    /* 4. Ganti endpoint gambar rekomendasi ke domain Vercel */
+                                    /* Ganti endpoint gambar rekomendasi ke domain Vercel */
                                     src={`${BASE_BACKEND_URL}/static/uploads/${itemRelated.image}`} 
                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
                                     alt={itemRelated.nama_jamu}
