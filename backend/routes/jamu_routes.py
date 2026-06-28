@@ -145,7 +145,6 @@ def get_all_jamu():
 
 # ====================================================================
 # 🎯 2. GET SINGLE JAMU BY ID + REKOMENDASI TERKAIT (COSINE SIMILARITY)
-# ====================================================================
 @jamu_bp.route('/jamu/<int:id_jamu>', methods=['GET'])
 def get_jamu_by_id(id_jamu):
     try:
@@ -157,6 +156,7 @@ def get_jamu_by_id(id_jamu):
         all_jamu = Jamu.query.all()
         saran_jamu_lainnya = []
         
+        # 🧠 1. Jalankan kalkulasi Cosine Similarity bawaan model .pkl Abang
         if model_ml is not None and len(all_jamu) > 1:
             try:
                 transformer_prep = model_ml.named_steps['prep']
@@ -177,15 +177,38 @@ def get_jamu_by_id(id_jamu):
                         continue
                         
                     item_dict = item.to_dict()
-                    item_dict['skor_matching'] = float(skor_similarity[idx])
+                    skor_matching_val = float(skor_similarity[idx])
+                    
+                    # Beri bonus skor jika ada relasi jenis/kabupaten agar prioritas naik
+                    if skor_matching_val == 0.0 and item.id_jenis == target.id_jenis:
+                        skor_matching_val = 0.25
+                    elif skor_matching_val == 0.0 and item.id_kabupaten == target.id_kabupaten:
+                        skor_matching_val = 0.15
+
+                    item_dict['skor_matching'] = skor_matching_val
                     saran_jamu_lainnya.append(item_dict)
 
-                saran_jamu_lainnya.sort(key=lambda x: x['skor_matching'], reverse=True)
-                saran_jamu_lainnya = saran_jamu_lainnya[:5]
+                # Urutkan dari produk dengan kemiripan tertinggi
+                saran_jamu_lainnya.sort(key=lambda x: x.get('skor_matching', 0), reverse=True)
+                saran_jamu_lainnya = [x for x in saran_jamu_lainnya if x.get('skor_matching', 0) > 0][:5]
                 
             except Exception as nlp_err:
                 print(f"⚠️ GAGAL MENGHITUNG COSINE SIMILARITY DI DETAIL: {nlp_err}")
                 saran_jamu_lainnya = []
+
+        # 🚨 ULTIMATE FALLBACK: Jika pencarian ML atau relasi jenis di atas menghasilkan ZONK (0),
+        # Paksa ambil 5 produk jamu apa saja yang ada di database untuk dijadikan pembanding pajangan!
+        if not saran_jamu_lainnya and len(all_jamu) > 1:
+            print("🚨 Mengaktifkan Total Fallback Pajangan Produk Jamu Lainnya...")
+            for item in all_jamu:
+                if int(item.id_jamu or 0) == int(target.id_jamu or 0):
+                    continue
+                item_dict = item.to_dict()
+                item_dict['skor_matching'] = 0.05
+                saran_jamu_lainnya.append(item_dict)
+            
+            # Potong maksimal ambil 5 produk saja
+            saran_jamu_lainnya = saran_jamu_lainnya[:5]
 
         return jsonify({
             "status": "success",
