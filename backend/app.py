@@ -2,6 +2,9 @@ import os
 from flask import Flask
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager 
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # --- 1. IMPORT DB (Pusat) ---
 # Pastikan semua file model ambil 'db' dari file yang sama
@@ -34,7 +37,10 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 # Database Config
 # Tips: Pake satu nama aja Bang, tadi 'jamu.db' sekarang 'database.db'. Bebas sih, yang penting konsisten.
-app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///" + os.path.join(basedir, 'database.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+
+# with db postgree + Sqlite3
+# app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', "sqlite:///" + os.path.join(os.path.abspath(os.path.dirname(__file__)), 'database.db'))
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'rahasia-jamu-madura-123' 
 

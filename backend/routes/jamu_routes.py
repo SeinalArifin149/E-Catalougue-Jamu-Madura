@@ -66,9 +66,10 @@ __main__.TextPreprocessor = TextPreprocessor
 # 🤖 0B. LOAD MODEL MACHINE LEARNING & KAMUS EXTERNAL JSON
 # ====================================================================
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))  # Folder /backend/routes
-ROOT_DIR = os.path.dirname(os.path.dirname(BASE_DIR))  # Mundur ke root project
-MODEL_PATH = os.path.join(ROOT_DIR, "NLP", "nlp4", "model_pipeline.pkl")
-KAMUS_PATH = os.path.join(BASE_DIR, "..", "kamus_typo.json")
+ROOT_DIR = os.path.dirname(os.path.dirname(BASE_DIR))  
+# Mundur ke root project
+MODEL_PATH = os.path.join(BACKEND_ROOT, "model_pipeline.pkl")
+KAMUS_PATH = os.path.join(BACKEND_ROOT, "kamus_typo.json")
 
 print("\n==============================================")
 print(f"🔬 Melacak Model ML ke: {MODEL_PATH}")
