@@ -39,21 +39,14 @@ export default function EditJamu() {
   const [loading, setLoading] = useState(true);
 
   // 🔥 PERBAIKAN 1: useEffect ini HANYA berjalan sekali saat ID berubah (Anti-reset data!)
+  // 🔥 OPTIMASI KILAT: Ambil data Jamu utama secara prioritas, dropdown statis diambil dari Cache LocalStorage
   useEffect(() => {
     const loadAllData = async () => {
       try {
         setLoading(true);
-        const [
-          dataJamu, resJenis, resKabupaten, resProdusen, resLokasi, resPerizinan
-        ] = await Promise.all([
-          fetchJamuById(Number(id)),
-          fetchAllJenis(),
-          fetchAllKabupaten(),
-          fetchAllProdusen(),
-          fetchAllLokasiProduksi(),
-          fetchAllPerizinan()
-        ]);
 
+        const dataJamu = await fetchJamuById(Number(id));
+        
         if (dataJamu) {
           setFormData({
             ...dataJamu,
@@ -65,18 +58,38 @@ export default function EditJamu() {
           });
 
           if (dataJamu.image) {
-            // ✅ DIUBAH MENEMBAK IMAGE STATIC KE VERCEL ONLINE CLOUD
             setImagePreview(`${BASE_BACKEND_URL}/static/uploads/${dataJamu.image}`);
           }
         }
 
-        setOptions({
-          jenis: resJenis || [],
-          kabupaten: resKabupaten || [],
-          produsen: resProdusen || [],
-          lokasiProduksi: resLokasi || [],
-          perizinan: resPerizinan || []
-        });
+        const cachedOptions = localStorage.getItem('jamu_admin_options_cache');
+        
+        if (cachedOptions) {
+          // Jika cache lokal browser ada, pakai langsung tanpa nembak API backend lagi!
+          setOptions(JSON.parse(cachedOptions));
+        } else {
+          // Jika cache kosong (misal baru pertama kali login), baru unduh pelan-pelan di background
+          console.log("Menyusun cache opsi master data dropdown admin baru...");
+          const [resJenis, resKabupaten, resProdusen, resLokasi, resPerizinan] = await Promise.all([
+            fetchAllJenis(),
+            fetchAllKabupaten(),
+            fetchAllProdusen(),
+            fetchAllLokasiProduksi(),
+            fetchAllPerizinan()
+          ]);
+
+          const masterOptions = {
+            jenis: resJenis || [],
+            kabupaten: resKabupaten || [],
+            produsen: resProdusen || [],
+            lokasiProduksi: resLokasi || [],
+            perizinan: resPerizinan || []
+          };
+
+          setOptions(masterOptions);
+          // Amankan ke local storage selama admin membuka panel
+          localStorage.setItem('jamu_admin_options_cache', JSON.stringify(masterOptions));
+        }
 
       } catch (error) {
         console.error('Gagal memuat data halaman edit:', error);
