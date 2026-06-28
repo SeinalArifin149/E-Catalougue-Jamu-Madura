@@ -20,8 +20,23 @@ UPLOAD_FOLDER = os.path.join('static', 'uploads')
 # ====================================================================
 class TextPreprocessor(BaseEstimator, TransformerMixin):
     def __init__(self):
-        from nltk.corpus import stopwords
-        self.stop_words = set(stopwords.words('indonesian'))
+        import nltk
+        import os
+        # Paksa NLTK mengunduh data ke folder /tmp yang diizinkan oleh Vercel
+        nltk_data_dir = os.path.join('/tmp', 'nltk_data')
+        if not os.path.exists(nltk_data_dir):
+            os.makedirs(nltk_data_dir)
+        nltk.data.path.append(nltk_data_dir)
+        
+        try:
+            from nltk.corpus import stopwords
+            self.stop_words = set(stopwords.words('indonesian'))
+        except LookupError:
+            # Unduh otomatis jika belum ada di serverless Vercel
+            nltk.download('stopwords', download_dir=nltk_data_dir)
+            from nltk.corpus import stopwords
+            self.stop_words = set(stopwords.words('indonesian'))
+            
         self.stop_words.add('melalui')
         
     def fit(self, X, y=None):
