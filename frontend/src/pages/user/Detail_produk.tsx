@@ -31,7 +31,7 @@ const DetailProduk: React.FC<ProductDetailProps> = ({ isOpen, onClose, product }
       }
     } catch (error) {
       console.error("Gagal memuat jamu terkait:", error);
-    } finally { // ✅ DIKOREKSI DARI 'file' MENJADI 'finally'
+    } finally { 
       setLoadingTerkait(false);
     }
   };
@@ -41,7 +41,7 @@ const DetailProduk: React.FC<ProductDetailProps> = ({ isOpen, onClose, product }
     if (isOpen && product?.id_jamu) {
       muatDetailDanSaran(product.id_jamu);
     }
-  }, [isOpen, product]);
+  }, [isOpen, product?.id_jamu]); // ✅ Diarahkan spesifik mengawasi ID jamu properti luar
 
   if (!isOpen || !currentProduct) return null;
 
@@ -210,7 +210,6 @@ const DetailProduk: React.FC<ProductDetailProps> = ({ isOpen, onClose, product }
                            <div className="w-full aspect-square rounded-xl overflow-hidden bg-orange-100 border border-orange-200 mb-2 shrink-0">
                               {itemRelated.image ? (
                                  <img 
-                                    /* Ganti endpoint gambar rekomendasi ke domain Vercel */
                                     src={`${BASE_BACKEND_URL}/static/uploads/${itemRelated.image}`} 
                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
                                     alt={itemRelated.nama_jamu}
