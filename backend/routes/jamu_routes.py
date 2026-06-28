@@ -7,7 +7,7 @@ from models.jamu_models import db, Jamu
 from flask_jwt_extended import jwt_required
 from werkzeug.utils import secure_filename
 from sklearn.base import BaseEstimator, TransformerMixin  
-from sklearn.metrics.pairwise import cosine_similarity  # <-- Dipertahankan untuk kalkulasi matriks NLP Abang
+from sklearn.metrics.pairwise import cosine_similarity  
 
 jamu_bp = Blueprint('jamu', __name__)
 
@@ -37,6 +37,9 @@ class TextPreprocessor(BaseEstimator, TransformerMixin):
             from nltk.corpus import stopwords
             self.stop_words = set(stopwords.words('indonesian'))
             
+        # Amankan kata kunci medis agar tidak dibuang sebagai sampah teks oleh NLTK
+        kata_medis_penting = {'sakit', 'nyeri', 'kurang', 'tidak', 'turun', 'naik', 'jamu'}
+        self.stop_words = self.stop_words - kata_medis_penting
         self.stop_words.add('melalui')
         
     def fit(self, X, y=None):
@@ -63,16 +66,18 @@ __main__.TextPreprocessor = TextPreprocessor
 
 
 # ====================================================================
-# 🤖 0B. LOAD MODEL MACHINE LEARNING & KAMUS EXTERNAL JSON
+# 🤖 0B. LOAD MODEL MACHINE LEARNING & KAMUS EXTERNAL JSON (SINKRON ROOT)
 # ====================================================================
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))  # Folder /backend/routes
-ROOT_DIR = os.path.dirname(os.path.dirname(BASE_DIR))  
-# Mundur ke root project
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))  # Target: /backend/routes
+BACKEND_ROOT = os.path.dirname(BASE_DIR)              # Naik satu tingkat ke: /backend
+
+# Mengarah langsung ke file pkl dan json yang berada di root folder backend
 MODEL_PATH = os.path.join(BACKEND_ROOT, "model_pipeline.pkl")
 KAMUS_PATH = os.path.join(BACKEND_ROOT, "kamus_typo.json")
 
 print("\n==============================================")
 print(f"🔬 Melacak Model ML ke: {MODEL_PATH}")
+print(f"🔬 Melacak Kamus Typo ke: {KAMUS_PATH}")
 print("==============================================\n")
 
 try:
@@ -101,14 +106,12 @@ def typo_correction(text):
     corrected_tokens = []
     
     for token in tokens:
-        # Regex memisahkan tanda baca di depan/belakang kata
         match = re.match(r'^([^\w]*)([\w\-\']+)([^\w]*)$', token)
         if match:
             prefix, word, suffix = match.groups()
             word_lower = word.lower()
             if word_lower in kamus_dict:
                 corrected_word = kamus_dict[word_lower]
-                # Menjaga Title Case atau UPPERCASE asal
                 if word.istitle():
                     corrected_word = corrected_word.title()
                 elif word.isupper():
@@ -131,7 +134,6 @@ def get_all_jamu():
     try:
         data_jamu = Jamu.query.all()
         hasil_json = [item.to_dict() for item in data_jamu] 
-
         return jsonify({
             "status": "success",
             "message": "Seluruh data Jamu berhasil diambil",
@@ -145,7 +147,6 @@ def get_all_jamu():
 # 🎯 2. GET SINGLE JAMU BY ID + REKOMENDASI TERKAIT (COSINE SIMILARITY)
 # ====================================================================
 @jamu_bp.route('/jamu/<int:id_jamu>', methods=['GET'])
-# @jwt_required()  # 🔥 Tetap dicopot agar bisa diakses oleh Publik (User Umum) tanpa error 401
 def get_jamu_by_id(id_jamu):
     try:
         target = Jamu.query.get(id_jamu)
@@ -156,27 +157,22 @@ def get_jamu_by_id(id_jamu):
         all_jamu = Jamu.query.all()
         saran_jamu_lainnya = []
         
-        # Jalankan mesin kalkulasi kemiripan khasiat menggunakan model TF-IDF bawaan pkl Abang
         if model_ml is not None and len(all_jamu) > 1:
             try:
                 transformer_prep = model_ml.named_steps['prep']
                 transformer_tfidf = model_ml.named_steps['tfidf']
 
-                # Hitung matriks khasiat jamu utama
                 khasiat_utama = str(target.khasiat or "")
                 query_clean = transformer_prep.transform([khasiat_utama])
                 matrix_query = transformer_tfidf.transform(query_clean)
 
-                # Hitung matriks khasiat pembanding dari seluruh baris SQLite
                 khasiat_semua = [str(item.khasiat or "") for item in all_jamu]
                 dataset_clean = transformer_prep.transform(khasiat_semua)
                 matrix_dataset = transformer_tfidf.transform(dataset_clean)
 
-                # Dapatkan skor linear Cosine Similarity
                 skor_similarity = cosine_similarity(matrix_query, matrix_dataset).flatten()
 
                 for idx, item in enumerate(all_jamu):
-                    # Proteksi: paksa ke integer agar aman dari bug beda tipe data penampung
                     if int(item.id_jamu or 0) == int(target.id_jamu or 0):
                         continue
                         
@@ -184,9 +180,8 @@ def get_jamu_by_id(id_jamu):
                     item_dict['skor_matching'] = float(skor_similarity[idx])
                     saran_jamu_lainnya.append(item_dict)
 
-                # Urutkan dari produk dengan kesamaan khasiat tertinggi
                 saran_jamu_lainnya.sort(key=lambda x: x['skor_matching'], reverse=True)
-                saran_jamu_lainnya = saran_jamu_lainnya[:5]  # Batasi ambil Top 5 saja
+                saran_jamu_lainnya = saran_jamu_lainnya[:5]
                 
             except Exception as nlp_err:
                 print(f"⚠️ GAGAL MENGHITUNG COSINE SIMILARITY DI DETAIL: {nlp_err}")
@@ -218,10 +213,8 @@ def tambah_jamu():
             file = request.files['image']
             if file and file.filename != '':
                 filename = secure_filename(file.filename)
-                
                 if not os.path.exists(UPLOAD_FOLDER):
                     os.makedirs(UPLOAD_FOLDER)
-                    
                 file.save(os.path.join(UPLOAD_FOLDER, filename))
                 nama_file_gambar = filename
 
@@ -232,7 +225,6 @@ def tambah_jamu():
             aturan_minum=request.form.get('aturan_minum'),
             efek_samping=request.form.get('efek_samping'),
             image=nama_file_gambar,
-            
             id_jenis=request.form.get('id_jenis'),
             id_produsen=request.form.get('id_produsen'),
             id_lokasi_produksi=request.form.get('id_lokasi_produksi'),
@@ -240,14 +232,9 @@ def tambah_jamu():
             id_perizinan=request.form.get('id_perizinan'),
             id_lokasi_pemasaran=request.form.get('id_lokasi_pemasaran')
         )
-
         db.session.add(jamu_baru)
         db.session.commit()
-
-        return jsonify({
-            "status": "success",
-            "message": f"Jamu {jamu_baru.nama_jamu} berhasil didaftarkan!"
-        }), 201
+        return jsonify({"status": "success", "message": f"Jamu {jamu_baru.nama_jamu} berhasil didaftarkan!"}), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -269,7 +256,6 @@ def edit_jamu(id_edit):
         target.kandungan = request.form.get('kandungan', target.kandungan)
         target.aturan_minum = request.form.get('aturan_minum', target.aturan_minum)
         target.efek_samping = request.form.get('efek_samping', target.efek_samping)
-        
         target.id_jenis = request.form.get('id_jenis', target.id_jenis)
         target.id_produsen = request.form.get('id_produsen', target.id_produsen)
         target.id_lokasi_produksi = request.form.get('id_lokasi_produksi', target.id_lokasi_produksi)
@@ -284,7 +270,6 @@ def edit_jamu(id_edit):
                     path_gambar_lama = os.path.join(UPLOAD_FOLDER, target.image)
                     if os.path.exists(path_gambar_lama):
                         os.remove(path_gambar_lama)
-
                 filename = secure_filename(file.filename)
                 file.save(os.path.join(UPLOAD_FOLDER, filename))
                 target.image = filename 
@@ -306,12 +291,10 @@ def hapus_jamu(id_hapus):
         target = Jamu.query.get(id_hapus)
         if not target:
             return jsonify({"status": "error", "message": "Data tidak ditemukan"}), 404
-        
         if target.image:
             path_file_fisik = os.path.join(UPLOAD_FOLDER, target.image)
             if os.path.exists(path_file_fisik):
                 os.remove(path_file_fisik) 
-
         db.session.delete(target)
         db.session.commit()
         return jsonify({"status": "success", "message": "Jamu beserta file gambarnya berhasil dihapus"}), 200
@@ -328,7 +311,6 @@ def get_public_jamu():
     try:
         data_jamu = Jamu.query.all()
         hasil_json = [item.to_dict() for item in data_jamu] 
-
         return jsonify({
             "status": "success",
             "message": "Data katalog jamu publik berhasil diambil",
@@ -346,16 +328,9 @@ def get_public_filters():
     try:
         all_jamu = Jamu.query.all()
         all_jamu_dict = [item.to_dict() for item in all_jamu]
-        
-        if all_jamu_dict:
-            print("\n==================================================================")
-            print("🔬 ISI DATA JAMU PERTAMA:", all_jamu_dict[0])
-            print("==================================================================\n")
-        
         jenis_unik = sorted(list(set([item.get('nama_jenis') for item in all_jamu_dict if item.get('nama_jenis')])))
         kabupaten_unik = sorted(list(set([item.get('nama_kabupaten') for item in all_jamu_dict if item.get('nama_kabupaten')])))
         perizinan_unik = sorted(list(set([item.get('nama_perizinan') for item in all_jamu_dict if item.get('nama_perizinan')])))
-        
         return jsonify({
             "status": "success",
             "message": "Data pilihan filter berhasil diekstrak",
@@ -370,94 +345,107 @@ def get_public_filters():
 
 
 # ====================================================================
-# 🎯 8. POST RECOMMENDATION VIA ML PIPELINE (SINKRON TOP 10 COSINE SIM)
+# 🌐 SUNTIKAN HEADER CORS GLOBAL UNTUK BLUEPRINT JAMU
+# ====================================================================
+@jamu_bp.after_request
+def add_cors_headers(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
+
+
+# ====================================================================
+# 🎯 8. POST RECOMMENDATION VIA ML PIPELINE (ANTI CRASH & ANTI CORS ERROR)
 # ====================================================================
 @jamu_bp.route('/jamu/recommend', methods=['POST', 'OPTIONS'])
 def dapatkan_rekomendasi_ml():
     if request.method == 'OPTIONS':
         return jsonify({"status": "success"}), 200
 
-    if model_ml is None:
-        return jsonify({"status": "error", "message": "Model ML pkl tidak aktif di server", "data": []}), 500
-
     try:
         data = request.get_json(silent=True) or {}
-        teks_input = data.get('keluhan', '')
+        teks_input = data.get('keluhan', '') or data.get('teks', '') or data.get('query', '')
         skip_correction = data.get('skip_correction', False)
 
         if not teks_input or not teks_input.strip():
             return jsonify({"status": "error", "message": "Teks keluhan tidak boleh kosong!"}), 400
 
-        # 🧠 1. Jalankan Koreksi Kata Typo bawaan model
         teks_terkoreksi_calculated = typo_correction(teks_input)
         teks_terkoreksi = teks_input if skip_correction else teks_terkoreksi_calculated
         
-        # Dapatkan prediksi payung kategori Naive Bayes
-        label_prediksi = model_ml.predict([teks_terkoreksi])[0]
-        probabilitas = model_ml.predict_proba([teks_terkoreksi]).max()
+        label_prediksi = "Umum"
+        probabilitas = 1.0
+
+        if model_ml is not None:
+            try:
+                label_prediksi = model_ml.predict([teks_terkoreksi])[0]
+                probabilitas = model_ml.predict_proba([teks_terkoreksi]).max()
+            except Exception as ml_err:
+                print(f"⚠️ Gagal prediksi model: {ml_err}")
+                label_prediksi = "Keluhan Terdeteksi"
 
         print("\n================== 🧠 AI PREDICTION LOG ==================")
         print(f"Input User      : {teks_input}")
         print(f"Koreksi Typo    : {teks_terkoreksi}")
         print(f"Hasil Prediksi  : {label_prediksi}")
-        print(f"Confidence Score: {probabilitas:.4f}")
         print("==========================================================\n")
 
-        # 🔍 2. Ambil data jamu lengkap dari SQLite untuk perangkingan matematika
         semua_jamu = Jamu.query.all()
         hasil_sementara = []
         
-        if semua_jamu:
-            prep_transformer = model_ml.named_steps['prep']
-            tfidf_vectorizer = model_ml.named_steps['tfidf']
-            
-            # 1. Transformasi keluhan input user menggunakan pipeline model nlp
-            query_clean = prep_transformer.transform([teks_terkoreksi])
-            query_vector = tfidf_vectorizer.transform(query_clean)
-            
-            # 2. Gabungkan nama_jamu dan khasiat untuk pencarian yang lebih optimal
-            jamu_texts = [f"{item.nama_jamu or ''} {item.khasiat or ''}" for item in semua_jamu]
-            jamu_clean = prep_transformer.transform(jamu_texts)
-            jamu_vectors = tfidf_vectorizer.transform(jamu_clean)
-            
-            # 3. Hitung cosine similarity antara keluhan dan semua jamu
-            similarities = cosine_similarity(query_vector, jamu_vectors)[0]
-            
-            for idx, item in enumerate(semua_jamu):
-                skor_persen = round(float(similarities[idx]) * 100, 1)
+        if semua_jamu and model_ml is not None:
+            try:
+                prep_transformer = model_ml.named_steps['prep']
+                tfidf_vectorizer = model_ml.named_steps['tfidf']
                 
-                # Masukkan hanya jamu dengan tingkat kecocokan > 0%
-                if skor_persen > 0:
+                query_clean = prep_transformer.transform([teks_terkoreksi])
+                query_vector = tfidf_vectorizer.transform(query_clean)
+                
+                jamu_texts = [f"{item.nama_jamu or ''} {item.khasiat or ''}" for item in semua_jamu]
+                jamu_clean = prep_transformer.transform(jamu_texts)
+                jamu_vectors = tfidf_vectorizer.transform(jamu_clean)
+                
+                similarities = cosine_similarity(query_vector, jamu_vectors)[0]
+                
+                for idx, item in enumerate(semua_jamu):
+                    skor_persen = round(float(similarities[idx]) * 100, 1)
+                    if skor_persen > 0:
+                        item_dict = item.to_dict()
+                        item_dict['relevansi'] = skor_persen
+                        item_dict['skor_matching'] = float(similarities[idx])
+                        hasil_sementara.append(item_dict)
+            except Exception as tfidf_err:
+                print(f"⚠️ Gagal kalkulasi TF-IDF: {tfidf_err}")
+
+        if not hasil_sementara or model_ml is None:
+            print("🚨 Menjalankan Fallback String Matching Manual (Model .pkl Tidak Aktif)...")
+            for item in semua_jamu:
+                khasiat_str = (item.khasiat or '').lower()
+                nama_str = (item.nama_jamu or '').lower()
+                
+                words = teks_terkoreksi.lower().split()
+                match_count = sum(1 for kata in words if kata in khasiat_str or kata in nama_str)
+                
+                if match_count > 0:
                     item_dict = item.to_dict()
-                    item_dict['relevansi'] = skor_persen
-                    # Samakan key 'skor_matching' agar frontend React tidak pecah saat rendering data
-                    item_dict['skor_matching'] = float(similarities[idx])
+                    item_dict['relevansi'] = min(round((match_count / len(words)) * 100, 1), 95.0)
+                    item_dict['skor_matching'] = float(item_dict['relevansi'] / 100)
                     hasil_sementara.append(item_dict)
-                    
-        # Urutkan berdasarkan skor tertinggi ke terendah
+
         hasil_sementara = sorted(hasil_sementara, key=lambda x: x['relevansi'], reverse=True)
-        
-        # Potong array untuk mengambil Top 10 terbaik
         hasil_json = hasil_sementara[:10]
 
         return jsonify({
             "status": "success",
-            "message": "Model AI berhasil meramu rekomendasi jamu",
+            "message": "Rekomendasi berhasil diramu",
             "prediksi_label": str(label_prediksi),
             "confidence": float(probabilitas),
             "teks_asli": teks_input,
-            "teks_terkoreksi": teks_terkoreksi_calculated,
+            "teks_terkoreksi": teks_terkoreksi,
             "data": hasil_json
         }), 200
 
     except Exception as e:
-        print(f"❌ ERROR DI RUTE /recommend: {e}")
+        print(f"❌ CRITICAL ERROR: {e}")
         return jsonify({"status": "error", "message": str(e), "data": []}), 500
-    
-@jamu_bp.after_request
-def add_cors_headers(response):
-    # Mengizinkan frontend domain catalogue-jamu-madura.vercel.app untuk mengakses API
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-    return response
