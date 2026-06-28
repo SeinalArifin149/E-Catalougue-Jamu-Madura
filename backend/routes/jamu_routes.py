@@ -453,3 +453,11 @@ def dapatkan_rekomendasi_ml():
     except Exception as e:
         print(f"❌ ERROR DI RUTE /recommend: {e}")
         return jsonify({"status": "error", "message": str(e), "data": []}), 500
+    
+@jamu_bp.after_request
+def add_cors_headers(response):
+    # Mengizinkan frontend domain catalogue-jamu-madura.vercel.app untuk mengakses API
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
