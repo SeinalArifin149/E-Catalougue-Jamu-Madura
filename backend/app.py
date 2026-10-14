@@ -77,7 +77,8 @@ app.register_blueprint(perizinan_bp, url_prefix='/api')
 # --- 5. BUAT TABEL OTOMATIS ---
 # Vercel menjalankan modul saat cold start dan filesystem deployment-nya read-only.
 # Database production harus sudah memiliki schema, jadi jangan jalankan DDL di sana.
-if os.environ.get("VERCEL") != "1":
+is_serverless = bool(os.environ.get("VERCEL") or os.environ.get("VERCEL_ENV"))
+if not is_serverless:
     with app.app_context():
         db.create_all()
 
