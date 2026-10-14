@@ -4,13 +4,9 @@ import json
 import logging
 from pathlib import Path
 
-import joblib
-import numpy as np
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import jwt_required
 from werkzeug.utils import secure_filename
-from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.metrics.pairwise import cosine_similarity
 
 from models.jamu_models import db, Jamu
 
@@ -56,7 +52,7 @@ USE_SCALER_FOR_CLASSIFIER = False
 # Penting: class/module harus cocok dengan saat pickle dibuat.
 # ============================================================
 
-class TextPreprocessor(BaseEstimator, TransformerMixin):
+class TextPreprocessor:
     def __init__(self):
         self.stop_words = set()
         self._load_stopwords()
@@ -124,7 +120,7 @@ TeksPrepocessor = TextPreprocessor
 __main__.TeksPrepocessor = TextPreprocessor
 
 # ============================================================
-# 2. LOAD MODEL DAN ARTEFAK
+# 2. LOAD MODEL DAN ARTEFAK SECARA LAZY
 # ============================================================
 
 model_ml = None
@@ -132,38 +128,49 @@ tfidf_vectorizer = None
 preprocessor = None
 scaler = None
 label_encoder = None
+ml_load_error = None
 kamus_dict = {}
 
-try:
-    required_files = [
-        MODEL_PATH,
-        TFIDF_PATH,
-        PREPROCESSOR_PATH,
-        LABEL_ENCODER_PATH,
-    ]
-    missing_files = [str(path) for path in required_files if not path.is_file()]
-    if missing_files:
-        raise FileNotFoundError(
-            "Artefak wajib tidak ditemukan: " + ", ".join(missing_files)
-        )
+def load_ml_artifacts():
+    """Muat dependency dan artefak ML hanya saat fitur rekomendasi dipakai."""
+    global model_ml, tfidf_vectorizer, preprocessor, scaler, label_encoder
+    global ml_load_error
 
-    # Muat preprocessor sebelum model lain
-    preprocessor = joblib.load(PREPROCESSOR_PATH)
-    tfidf_vectorizer = joblib.load(TFIDF_PATH)
-    label_encoder = joblib.load(LABEL_ENCODER_PATH)
+    if ml_load_error is not None:
+        raise RuntimeError("Fitur rekomendasi ML tidak tersedia.") from ml_load_error
+    if model_ml is not None:
+        return
 
-    if SCALER_PATH.is_file():
-        scaler = joblib.load(SCALER_PATH)
+    try:
+        import joblib
 
-    from tensorflow import keras
+        required_files = [
+            MODEL_PATH,
+            TFIDF_PATH,
+            PREPROCESSOR_PATH,
+            LABEL_ENCODER_PATH,
+        ]
+        missing_files = [str(path) for path in required_files if not path.is_file()]
+        if missing_files:
+            raise FileNotFoundError(
+                "Artefak wajib tidak ditemukan: " + ", ".join(missing_files)
+            )
 
-    model_ml = keras.models.load_model(MODEL_PATH, compile=False)
+        preprocessor = joblib.load(PREPROCESSOR_PATH)
+        tfidf_vectorizer = joblib.load(TFIDF_PATH)
+        label_encoder = joblib.load(LABEL_ENCODER_PATH)
 
-    logger.info("Model Keras dan artefak NLP berhasil dimuat dari %s", MODEL_DIR)
+        if SCALER_PATH.is_file():
+            scaler = joblib.load(SCALER_PATH)
 
-except Exception:
-    logger.exception("Gagal memuat model atau artefak NLP.")
-    model_ml = None
+        from tensorflow import keras
+
+        model_ml = keras.models.load_model(MODEL_PATH, compile=False)
+        logger.info("Model Keras dan artefak NLP berhasil dimuat dari %s", MODEL_DIR)
+    except Exception as exc:
+        ml_load_error = exc
+        logger.exception("Gagal memuat model atau artefak NLP.")
+        raise RuntimeError("Fitur rekomendasi ML tidak tersedia.") from exc
 
 try:
     if KAMUS_PATH.is_file():
@@ -210,6 +217,7 @@ def typo_correction(text):
 
 def transform_text(texts):
     """Mengubah daftar teks menjadi matriks fitur TF-IDF."""
+    load_ml_artifacts()
     if preprocessor is None or tfidf_vectorizer is None:
         raise RuntimeError("Preprocessor/TF-IDF belum berhasil dimuat.")
 
@@ -219,8 +227,11 @@ def transform_text(texts):
 
 def predict_class(text):
     """Prediksi kategori dengan model Keras."""
+    load_ml_artifacts()
     if model_ml is None or label_encoder is None:
         raise RuntimeError("Model Keras atau label encoder belum tersedia.")
+
+    import numpy as np
 
     features = transform_text([text])
 
@@ -250,6 +261,7 @@ def predict_class(text):
 
 def rank_jamu_by_similarity(query_text, jamu_items, limit=None):
     """Urutkan jamu berdasarkan cosine similarity TF-IDF."""
+    load_ml_artifacts()
     if not jamu_items or tfidf_vectorizer is None or preprocessor is None:
         return []
 
@@ -259,7 +271,19 @@ def rank_jamu_by_similarity(query_text, jamu_items, limit=None):
         for item in jamu_items
     ]
     jamu_vectors = transform_text(jamu_texts)
-    scores = cosine_similarity(query_vector, jamu_vectors).flatten()
+    import numpy as np
+
+    query_array = query_vector.toarray()
+    jamu_array = jamu_vectors.toarray()
+    query_norm = np.linalg.norm(query_array, axis=1, keepdims=True)
+    jamu_norm = np.linalg.norm(jamu_array, axis=1, keepdims=True)
+    denominator = query_norm * jamu_norm.T
+    scores = np.divide(
+        query_array @ jamu_array.T,
+        denominator,
+        out=np.zeros((query_array.shape[0], jamu_array.shape[0])),
+        where=denominator != 0,
+    ).flatten()
 
     results = []
     for index, item in enumerate(jamu_items):
@@ -342,7 +366,19 @@ def get_jamu_by_id(id_jamu):
                 matrix_dataset = transform_text([
                     str(item.khasiat or "") for item in all_jamu
                 ])
-                scores = cosine_similarity(matrix_query, matrix_dataset).flatten()
+                import numpy as np
+
+                query_array = matrix_query.toarray()
+                dataset_array = matrix_dataset.toarray()
+                query_norm = np.linalg.norm(query_array, axis=1, keepdims=True)
+                dataset_norm = np.linalg.norm(dataset_array, axis=1, keepdims=True)
+                denominator = query_norm * dataset_norm.T
+                scores = np.divide(
+                    query_array @ dataset_array.T,
+                    denominator,
+                    out=np.zeros((query_array.shape[0], dataset_array.shape[0])),
+                    where=denominator != 0,
+                ).flatten()
 
                 for index, item in enumerate(all_jamu):
                     if item.id_jamu == target.id_jamu:

@@ -2,12 +2,8 @@ flask
 flask-cors
 flask-jwt-extended
 flask-sqlalchemy
-scikit-learn
-pandas
-nltk
 sqlalchemy
 pymysql
 
 python-dotenv
 psycopg2-binary
-Sastrawi
