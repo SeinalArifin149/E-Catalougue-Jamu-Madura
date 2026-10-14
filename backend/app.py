@@ -1,4 +1,6 @@
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 from flask import Flask
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager 
@@ -30,20 +32,24 @@ from routes.produsen_routes import produsen_bp
 from routes.jamu_routes import jamu_bp
 from routes.perizinan_routes import perizinan_bp
 
+
+
 app = Flask(__name__)
-CORS(app)
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 # Database Config
-# Tips: Pake satu nama aja Bang, tadi 'jamu.db' sekarang 'database.db'. Bebas sih, yang penting konsisten.
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+database_url = os.environ.get('DATABASE_URL') or (
+    "sqlite:///" + os.path.join(basedir, "database.db")
+)
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 
 # with db postgree + Sqlite3
 # app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', "sqlite:///" + os.path.join(os.path.abspath(os.path.dirname(__file__)), 'database.db'))
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['JWT_SECRET_KEY'] = 'rahasia-jamu-madura-123' 
 
+CORS(app)
 jwt = JWTManager(app)
 db.init_app(app)
 
