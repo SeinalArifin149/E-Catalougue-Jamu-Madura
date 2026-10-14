@@ -1,6 +1,7 @@
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+import logging
 from flask import Flask
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager 
@@ -35,13 +36,17 @@ from routes.perizinan_routes import perizinan_bp
 
 
 app = Flask(__name__)
+logger = logging.getLogger(__name__)
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 # Database Config
-database_url = os.environ.get('DATABASE_URL') or (
-    "sqlite:///" + os.path.join(basedir, "database.db")
-)
+database_url = os.environ.get("DATABASE_URL", "").strip()
+if database_url.startswith("postgres://"):
+    database_url = "postgresql://" + database_url[len("postgres://"):]
+if not database_url:
+    database_path = "/tmp/jamu.db" if os.environ.get("VERCEL") == "1" else os.path.join(basedir, "database.db")
+    database_url = "sqlite:///" + database_path
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 
 # with db postgree + Sqlite3
@@ -63,9 +68,11 @@ app.register_blueprint(produsen_bp, url_prefix='/api')
 app.register_blueprint(jamu_bp, url_prefix='/api')
 app.register_blueprint(perizinan_bp, url_prefix='/api')
 # --- 5. BUAT TABEL OTOMATIS ---
-with app.app_context():
-    # Sekarang create_all() pasti kenal semua tabel karena sudah di-import di atas
-    db.create_all()
+# Vercel menjalankan modul saat cold start dan filesystem deployment-nya read-only.
+# Database production harus sudah memiliki schema, jadi jangan jalankan DDL di sana.
+if os.environ.get("VERCEL") != "1":
+    with app.app_context():
+        db.create_all()
 
 if __name__ == '__main__':
     app.run(debug=True)

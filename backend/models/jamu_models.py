@@ -1,3 +1,5 @@
+import os
+
 from models.kabupaten_models import db
 from models.jenis_models import JenisJamu  
 
@@ -27,6 +29,10 @@ class Jamu(db.Model):
     perizinan = db.relationship('Perizinan', backref='jamu_list', lazy=True)
     
     def to_dict(self):
+        image = self.image
+        if image and image.startswith("file://"):
+            image = os.path.basename(image.replace("\\", "/"))
+
         return {
             "id_jamu": self.id_jamu,
             "nama_jamu": self.nama_jamu,
@@ -34,7 +40,7 @@ class Jamu(db.Model):
             "kandungan": self.kandungan,
             "aturan_minum": self.aturan_minum,
             "efek_samping": self.efek_samping,
-            "image": self.image,
+            "image": image,
             "id_jenis": self.id_jenis,
             "id_produsen": self.id_produsen,
             "id_lokasi_produksi": self.id_lokasi_produksi,
