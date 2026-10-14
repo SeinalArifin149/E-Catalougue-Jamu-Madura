@@ -10,3 +10,4 @@ pymysql
 
 python-dotenv
 psycopg2-binary
+Sastrawi

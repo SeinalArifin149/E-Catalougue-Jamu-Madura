@@ -45,6 +45,9 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 database_url = os.environ.get("DATABASE_URL", "").strip().strip("\"'")
 if database_url.startswith("postgres://"):
     database_url = "postgresql://" + database_url[len("postgres://"):]
+if database_url.startswith("postgresql://"):
+    # requirements.txt menyediakan psycopg2-binary, bukan psycopg v3.
+    database_url = "postgresql+psycopg2://" + database_url[len("postgresql://"):]
 try:
     if database_url:
         make_url(database_url)
