@@ -6,6 +6,7 @@ from flask import Flask
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager 
 from dotenv import load_dotenv
+from sqlalchemy.engine import make_url
 
 load_dotenv()
 
@@ -41,9 +42,15 @@ logger = logging.getLogger(__name__)
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 # Database Config
-database_url = os.environ.get("DATABASE_URL", "").strip()
+database_url = os.environ.get("DATABASE_URL", "").strip().strip("\"'")
 if database_url.startswith("postgres://"):
     database_url = "postgresql://" + database_url[len("postgres://"):]
+try:
+    if database_url:
+        make_url(database_url)
+except Exception:
+    logger.exception("DATABASE_URL tidak valid; menggunakan database SQLite lokal.")
+    database_url = ""
 if not database_url:
     database_path = "/tmp/jamu.db" if os.environ.get("VERCEL") == "1" else os.path.join(basedir, "database.db")
     database_url = "sqlite:///" + database_path
