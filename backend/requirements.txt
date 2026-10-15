@@ -4,6 +4,8 @@ flask-jwt-extended
 flask-sqlalchemy
 sqlalchemy
 pymysql
+joblib
+scikit-learn
 
 python-dotenv
 psycopg2-binary
