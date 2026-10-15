@@ -64,7 +64,7 @@ const DetailProduk: React.FC<ProductDetailProps> = ({ isOpen, onClose, product }
   if (!isOpen || !currentProduct) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4">
       {/* Blurred overlay */}
       <div 
         className="absolute inset-0 bg-white/40 backdrop-blur-sm animate-[fadeIn_0.3s_ease-out_forwards] cursor-pointer"
@@ -88,34 +88,34 @@ const DetailProduk: React.FC<ProductDetailProps> = ({ isOpen, onClose, product }
       </style>
 
       {/* Modal Content */}
-      <div className="relative z-10 w-full max-w-[950px] bg-[#d9d9d9] rounded-[20px] p-6 sm:p-10 shadow-2xl flex flex-col min-h-[500px] animate-[modalPop_0.4s_ease-out_forwards] max-h-[90vh] overflow-y-auto custom-scrollbar">
+      <div className="relative z-10 w-full max-w-[950px] bg-[#d9d9d9] rounded-[16px] sm:rounded-[20px] p-3 sm:p-6 lg:p-10 shadow-2xl flex flex-col min-h-0 sm:min-h-[500px] animate-[modalPop_0.4s_ease-out_forwards] max-h-[94vh] sm:max-h-[90vh] overflow-y-auto custom-scrollbar">
          
          {/* ATAS: ATRIBUT UTAMA (FLEX ROW KIRI & KANAN) */}
          <div className="flex flex-col md:flex-row w-full mb-8">
             
             {/* Left Side */}
-            <div className="w-full md:w-[45%] flex flex-col relative md:pr-8 md:border-r border-gray-400 mb-8 md:mb-0">
+            <div className="w-full md:w-[45%] flex flex-col relative md:pr-8 md:border-r border-gray-400 mb-5 sm:mb-8 md:mb-0">
                <button 
                  onClick={onClose}
-                 className="self-start bg-[#b58e1b] text-white px-8 py-2 rounded-full font-semibold hover:bg-[#9a7815] transition-colors shadow-md text-[15px]"
+                 className="self-start bg-[#b58e1b] text-white px-5 sm:px-8 py-2 rounded-full font-semibold hover:bg-[#9a7815] transition-colors shadow-md text-[13px] sm:text-[15px]"
                >
                  Kembali
                </button>
                
-               <div className="mt-8 w-full flex-grow flex items-center justify-center">
+               <div className="mt-5 sm:mt-8 w-full flex-grow flex items-center justify-center">
                   {currentProduct.image ? (
                      <img 
                        /* Ganti endpoint gambar utama ke domain Vercel */
                        src={`${BASE_BACKEND_URL}/static/uploads/${currentProduct.image}`} 
                        alt={currentProduct.nama_jamu} 
-                       className="w-full aspect-square max-w-[320px] object-cover rounded-[24px] shadow-lg border-[4px] border-orange-300"
+                       className="w-full aspect-square max-w-[220px] sm:max-w-[320px] object-cover rounded-[20px] shadow-lg border-4 border-orange-300"
                        onError={(e) => {
                          (e.target as HTMLImageElement).onerror = null;
                          (e.target as HTMLImageElement).src = "https://via.placeholder.com/400?text=Gambar+Tidak+Ditemukan";
                        }}
                      />
                   ) : (
-                     <div className="w-full aspect-square max-w-[320px] bg-gradient-to-b from-yellow-100 to-orange-400 rounded-[24px] overflow-hidden shadow-lg relative flex flex-col items-center justify-center p-4 text-center border-[4px] border-orange-300">
+                     <div className="w-full aspect-square max-w-[220px] sm:max-w-[320px] bg-gradient-to-b from-yellow-100 to-orange-400 rounded-[20px] overflow-hidden shadow-lg relative flex flex-col items-center justify-center p-3 sm:p-4 text-center border-4 border-orange-300">
                          <span className="text-red-600 font-black text-[20px] leading-tight mb-1 uppercase break-words w-full px-2">
                            {currentProduct.nama_jamu}
                          </span>
@@ -132,7 +132,7 @@ const DetailProduk: React.FC<ProductDetailProps> = ({ isOpen, onClose, product }
             
             {/* Right Side */}
             <div className="w-full md:w-[55%] md:pl-8 flex flex-col justify-center">
-               <h2 className="text-[26px] sm:text-[32px] font-bold text-center mb-6 leading-tight text-[#222] font-serif capitalize">
+               <h2 className="text-[22px] sm:text-[32px] font-bold text-center mb-4 sm:mb-6 leading-tight break-words text-[#222] font-serif capitalize">
                  {currentProduct.nama_jamu}
                </h2>
 
@@ -143,13 +143,13 @@ const DetailProduk: React.FC<ProductDetailProps> = ({ isOpen, onClose, product }
                )}
                
                <div className="w-full overflow-hidden rounded-xl border border-neutral-500/40 shadow-lg mb-6">
-                 <table className="w-full text-[13px] sm:text-[14px] bg-[#323232] text-[#f5f5f5] table-fixed border-collapse">
+                 <table className="w-full text-[11px] sm:text-[14px] bg-[#323232] text-[#f5f5f5] table-fixed border-collapse">
                    <tbody>
                      <tr className="border-b border-neutral-600/50 hover:bg-[#3a3a3a] transition-colors">
-                       <td className="p-3 w-[110px] sm:w-[150px] font-bold text-gray-400 bg-[#252525] border-r border-neutral-600/50 uppercase text-[10px] tracking-wider text-center md:text-left">
+                       <td className="p-2 sm:p-3 w-[92px] sm:w-[150px] font-bold text-gray-400 bg-[#252525] border-r border-neutral-600/50 uppercase text-[9px] sm:text-[10px] tracking-wider text-center md:text-left">
                          Nama Jamu
                        </td>
-                       <td className="p-3 break-words font-medium text-white capitalize">
+                       <td className="p-2 sm:p-3 break-words font-medium text-white capitalize">
                          {currentProduct.nama_jamu || "-"}
                        </td>
                      </tr>
@@ -185,7 +185,7 @@ const DetailProduk: React.FC<ProductDetailProps> = ({ isOpen, onClose, product }
                        <td className="p-3 font-bold text-gray-400 bg-[#252525] border-r border-neutral-600/50 uppercase text-[10px] tracking-wider text-center md:text-left">
                          Bahan Baku
                        </td>
-                       <td className="p-3 italic text-neutral-300 break-words leading-relaxed">
+                       <td className="p-2 sm:p-3 italic text-neutral-300 break-words leading-relaxed">
                          {currentProduct.kandungan || "Kandungan Alami Tradisional"}
                        </td>
                      </tr>
@@ -194,7 +194,7 @@ const DetailProduk: React.FC<ProductDetailProps> = ({ isOpen, onClose, product }
                        <td className="p-3 font-bold text-gray-400 bg-[#252525] border-r border-neutral-600/50 uppercase text-[10px] tracking-wider text-center md:text-left">
                          Aturan Minum
                        </td>
-                       <td className="p-3 break-words text-orange-300 font-medium leading-relaxed">
+                       <td className="p-2 sm:p-3 break-words text-orange-300 font-medium leading-relaxed">
                          {currentProduct.aturan_minum || "Tidak ada keterangan spesifik"}
                        </td>
                      </tr>
@@ -223,7 +223,7 @@ const DetailProduk: React.FC<ProductDetailProps> = ({ isOpen, onClose, product }
                   <span className="text-xs text-gray-700 font-semibold animate-pulse">AI sedang meramu saran jamu terdekat...</span>
                </div>
             ) : (
-               <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+               <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 sm:gap-4">
                   {rekomendasiTerkait.length > 0 ? (
                      rekomendasiTerkait.map((itemRelated) => (
                         <div 

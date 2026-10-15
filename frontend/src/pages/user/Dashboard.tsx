@@ -198,7 +198,7 @@ const UserDashboard: React.FC = () => {
       >
         <div className="absolute inset-0 bg-white/30 sm:bg-transparent pointer-events-none z-0"></div>
 
-        <div className="relative z-10 w-full px-4 sm:px-8 lg:px-16 mx-auto flex-grow flex flex-col">
+        <div className="relative z-10 w-full px-3 sm:px-8 lg:px-16 mx-auto flex-grow flex flex-col">
            
             {/* Top Row: Judul Katalog & Tombol Filter */}
             <div className="relative mb-10 sm:mb-16 flex flex-col gap-6 sm:min-h-[120px] hide-animate">
@@ -286,14 +286,14 @@ const UserDashboard: React.FC = () => {
                   </p>
                 </div>
               ) : (
-                <div className={`transition-all duration-500 ease-in-out grid gap-6 sm:gap-8 justify-items-center justify-center mb-12 sm:mb-16 w-full
+                <div className={`transition-all duration-500 ease-in-out grid gap-3 sm:gap-8 justify-items-center justify-center mb-12 sm:mb-16 w-full
                    ${isFilterOpen ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 lg:pr-[360px]' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4'}
                 `}>
                    {currentCards.length > 0 ? (
                       currentCards.map((item, idx) => (
                         <div 
                           key={item.id_jamu || idx} 
-                          className="hide-animate bg-[#eef6ec] w-full max-w-[340px] rounded-[20px] p-4 shadow-lg flex flex-col items-center hover:-translate-y-2 hover:shadow-2xl cursor-pointer transition-all duration-300 border border-green-100" 
+                          className="hide-animate bg-[#eef6ec] w-full max-w-[340px] rounded-[16px] sm:rounded-[20px] p-2.5 sm:p-4 shadow-lg flex flex-col items-center hover:-translate-y-2 hover:shadow-2xl cursor-pointer transition-all duration-300 border border-green-100"
                           style={{transitionDelay: `${idx * 0.03}s`}}
                           onClick={() => handleCardClick(item)}
                         >

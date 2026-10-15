@@ -93,24 +93,24 @@ const Recommendation: React.FC = () => {
 
       {/* Main Content dengan background kiri terkunci (bg-fixed) */}
       <main 
-        className="flex-grow pt-40 pb-24 flex flex-col items-center bg-cover bg-fixed bg-left bg-no-repeat relative"
+        className="flex-grow pt-28 sm:pt-40 pb-16 sm:pb-24 flex flex-col items-center bg-cover bg-scroll sm:bg-fixed bg-left bg-no-repeat relative"
         style={{ backgroundImage: `url('${bgImageLeft}')` }}
       >
         {/* Overlay tipis agar teks tetap terbaca tajam */}
         <div className="absolute inset-0 bg-white/50 pointer-events-none z-0"></div>
         
-        <div className="w-full max-w-7xl mx-auto px-6 relative z-10 flex flex-col">
+        <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 relative z-10 flex flex-col">
           
           {/* TOP SECTION: JUDUL HALAMAN & KAPSUL PENCARIAN */}
-          <div className="flex flex-col sm:flex-row justify-between items-center mb-16 gap-6 animate-[slideDownFade_0.8s_ease-out_forwards]">
-            <h1 className="text-[36px] sm:text-[42px] font-bold font-serif text-[#222] tracking-tight">
+          <div className="flex flex-col sm:flex-row justify-between items-center mb-10 sm:mb-16 gap-5 sm:gap-6 animate-[slideDownFade_0.8s_ease-out_forwards]">
+            <h1 className="text-[30px] sm:text-[42px] text-center font-bold font-serif text-[#222] tracking-tight">
               Hasil Pencarian
             </h1>
             
             {/* Search Input Kapsul */}
             <form 
               onSubmit={handleSearchSubmit}
-              className="flex items-center bg-[#e8dbdf] rounded-full px-6 py-4 w-full sm:w-auto sm:min-w-[420px] shadow-md transition-transform focus-within:scale-[1.02] border border-gray-300/40"
+              className="flex items-center bg-[#e8dbdf] rounded-full px-4 sm:px-6 py-3 sm:py-4 w-full sm:w-auto sm:min-w-[420px] shadow-md border border-gray-300/40"
             >
               <button 
                 type="button"
@@ -128,7 +128,7 @@ const Recommendation: React.FC = () => {
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 placeholder="Tulis keluhan tubuh Anda di sini..." 
-                className="bg-transparent border-none outline-none flex-grow text-[#222] px-2 text-[18px] placeholder-[#777] focus:ring-0"
+                className="bg-transparent border-none outline-none flex-grow min-w-0 text-[#222] px-2 text-[15px] sm:text-[18px] placeholder-[#777] focus:ring-0"
               />
               
               {searchText && (
@@ -147,7 +147,7 @@ const Recommendation: React.FC = () => {
           
           {/* LOGIKA SUGGESTI TYPO (PREMIUM GOOGLE-LIKE STYLE) */}
           {suggestion && !loading && (
-            <div className="w-full mb-10 bg-white/70 backdrop-blur-md rounded-2xl p-6 border border-emerald-200/50 shadow-lg animate-[slideDownFade_0.5s_ease-out_forwards] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="w-full mb-8 sm:mb-10 bg-white/70 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-emerald-200/50 shadow-lg animate-[slideDownFade_0.5s_ease-out_forwards] flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div className="flex items-start md:items-center gap-4">
                 <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl flex-shrink-0 shadow-inner">
                   <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" className="w-6 h-6">
@@ -239,13 +239,13 @@ const Recommendation: React.FC = () => {
               )}
 
               {/* 🔥 GRID KATALOG 5 KOLOM (Dibatasi oleh State limit) */}
-              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-5 gap-6 justify-items-center justify-center">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-5 gap-3 sm:gap-6 justify-items-center justify-center">
                 {dataRekomendasi.length > 0 ? (
                   dataRekomendasi.slice(0, limit).map((item, idx) => (
                     <div 
                       key={item.id_jamu || idx}
                       onClick={() => handleCardClick(item)}
-                      className="bg-[#eef6ec] w-full max-w-[240px] rounded-[20px] p-4 pb-5 shadow-lg flex flex-col items-center hover:-translate-y-2 hover:shadow-2xl cursor-pointer transition-all duration-300 border border-green-100 animate-[slideUpFade_0.8s_ease-out_forwards]"
+                      className="bg-[#eef6ec] w-full max-w-[240px] rounded-[16px] sm:rounded-[20px] p-2.5 sm:p-4 pb-4 sm:pb-5 shadow-lg flex flex-col items-center hover:-translate-y-2 hover:shadow-2xl cursor-pointer transition-all duration-300 border border-green-100 animate-[slideUpFade_0.8s_ease-out_forwards]"
                       style={{ animationDelay: `${idx * 0.05}s` }}
                     >
                       {/* Gambar Produk */}
