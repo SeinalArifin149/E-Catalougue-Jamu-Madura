@@ -26,7 +26,8 @@ const UserDashboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
 
   // State Menampung daftar menu checkbox dari backend
-  const [menuFilters, setMenuFilters] = useState<{ jenis: string[]; kabupaten: string[]; perizinan: string[] }>({
+  const [menuFilters, setMenuFilters] = useState<{ kategori: { id_kategori: number; nama_kategori: string }[]; jenis: string[]; kabupaten: string[]; perizinan: string[] }>({
+    kategori: [],
     jenis: [],
     kabupaten: [],
     perizinan: []
@@ -38,6 +39,7 @@ const UserDashboard: React.FC = () => {
 
   // State Filter Aktif (Pilihan User)
   const [filterJenis, setFilterJenis] = useState<string[]>([]);
+  const [filterKategori, setFilterKategori] = useState<number[]>([]);
   const [filterAsal, setFilterAsal] = useState<string[]>([]);
   const [filterPerizinan, setFilterPerizinan] = useState<string[]>([]);
 
@@ -56,12 +58,19 @@ const UserDashboard: React.FC = () => {
         ]);
         
         setDataJamu(hasilKatalog || []);
-        setMenuFilters(hasilFilter || { jenis: [], kabupaten: [], perizinan: [] }); 
+        setMenuFilters(hasilFilter || { kategori: [], jenis: [], kabupaten: [], perizinan: [] });
       } catch (error) {
         console.error("Gagal memuat data publik:", error);
       } finally {
         setLoading(false); 
       }
+    };
+
+    const handleToggleKategori = (idKategori: number) => {
+      setFilterKategori((prev) =>
+        prev.includes(idKategori) ? prev.filter((item) => item !== idKategori) : [...prev, idKategori]
+      );
+      setCurrentPage(1);
     };
     memuatSemuaData();
   }, []);
@@ -91,9 +100,10 @@ const UserDashboard: React.FC = () => {
   // --- 🔍 PROSES PENYARINGAN REAL-TIME MULTIPLE CHOICE ---
   const filteredCards = dataJamu.filter((item) => {
     const cocokJenis = filterJenis.length > 0 ? filterJenis.includes(item.nama_jenis) : true;
+    const cocokKategori = filterKategori.length > 0 ? filterKategori.includes(item.id_kategori) : true;
     const cocokAsal = filterAsal.length > 0 ? filterAsal.includes(item.nama_kabupaten) : true;
     const cocokPerizinan = filterPerizinan.length > 0 ? filterPerizinan.includes(item.nama_perizinan) : true;
-    return cocokJenis && cocokAsal && cocokPerizinan;
+    return cocokKategori && cocokJenis && cocokAsal && cocokPerizinan;
   });
 
   // Perhitungan Data Pagination
@@ -244,6 +254,28 @@ const UserDashboard: React.FC = () => {
                  <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isFilterOpen ? 'opacity-100 max-h-[900px]' : 'opacity-0 max-h-0'}`}>
                     <div className="w-full text-white max-h-[70vh] overflow-y-auto pr-1">
                        <h3 className="text-[22px] sm:text-[26px] font-bold text-[#111] mb-5 sm:mb-6">Filter Jamu</h3>
+
+                       {/* Filter Kategori */}
+                       <div className="mb-5 sm:mb-6">
+                         <h4 className="font-bold text-[#111] text-[16px] sm:text-[18px] mb-3">Kategori</h4>
+                         <div className="grid grid-cols-1 gap-y-3 text-[15px] sm:text-[16px] font-medium text-white">
+                            {loading ? (
+                              <span className="text-xs italic text-white/60">Memuat...</span>
+                            ) : (
+                              menuFilters.kategori.map((kategori) => (
+                                <label key={kategori.id_kategori} className="flex items-start gap-3 cursor-pointer leading-snug">
+                                  <input
+                                    type="checkbox"
+                                    checked={filterKategori.includes(kategori.id_kategori)}
+                                    onChange={() => handleToggleKategori(kategori.id_kategori)}
+                                    className="w-5 h-5 mt-0.5 accent-[#111] rounded-sm cursor-pointer flex-shrink-0"
+                                  />
+                                  <span className="break-words">{kategori.nama_kategori}</span>
+                                </label>
+                              ))
+                            )}
+                         </div>
+                       </div>
                        
                        {/* Filter Jenis */}
                        <div className="mb-5 sm:mb-6">

@@ -632,10 +632,15 @@ def get_public_jamu():
         query = Jamu.query
         search = request.args.get("q", "").strip()
         jenis = request.args.get("jenis", "").strip()
+        kategori = request.args.get("kategori", "").strip()
         if search:
             query = query.filter(Jamu.nama_jamu.ilike(f"%{search}%"))
         if jenis:
             query = query.filter(Jamu.id_jenis == jenis if jenis.isdigit() else False)
+        if kategori:
+            query = query.filter(
+                Jamu.id_kategori == kategori if kategori.isdigit() else False
+            )
 
         page = max(request.args.get("page", 1, type=int), 1)
         per_page = min(max(request.args.get("per_page", 24, type=int), 1), 100)
@@ -683,6 +688,11 @@ def get_public_filters():
             for item in data
             if item.get("nama_perizinan")
         })
+        kategori = sorted({
+            (item.get("id_kategori"), item.get("nama_kategori"))
+            for item in data
+            if item.get("id_kategori") and item.get("nama_kategori")
+        }, key=lambda item: item[1].lower())
 
         return jsonify({
             "status": "success",
@@ -691,6 +701,10 @@ def get_public_filters():
                 "jenis": jenis,
                 "kabupaten": kabupaten,
                 "perizinan": perizinan,
+                "kategori": [
+                    {"id_kategori": item[0], "nama_kategori": item[1]}
+                    for item in kategori
+                ],
             },
         }), 200
 
@@ -767,7 +781,7 @@ def dapatkan_rekomendasi_ml():
                 and normalized_label == re.sub(
                     r"[^a-z0-9]+",
                     " ",
-                    (item.jenis_rel.nama_jenis if item.jenis_rel else "").lower(),
+                    (item.kategori_rel.nama_kategori if item.kategori_rel else "").lower(),
                 ).strip()
             ]
             try:

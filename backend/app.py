@@ -23,6 +23,7 @@ from models.produsen_models import Produsen
 from models.lokasi_produksi_models import LokasiProduksi
 from models.lokasi_pemasaran_models import LokasiPemasaran
 from models.jamu_models import Jamu 
+from models.kategori_models import Kategori
 from models.perizinan_models import Perizinan # Buka kalau sudah ada
 
 # --- 3. IMPORT SEMUA BLUEPRINT ---

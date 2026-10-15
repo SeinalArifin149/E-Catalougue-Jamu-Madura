@@ -14,6 +14,8 @@ type Product = {
   khasiat?: string | null;
   image?: string | null;
   nama_jenis?: string;
+  id_kategori?: number | null;
+  nama_kategori?: string;
   nama_kabupaten?: string;
 };
 
@@ -22,6 +24,8 @@ const BASE_BACKEND_URL = "https://e-catalougue-jamu-madura.vercel.app";
 const Catalog: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [jenis, setJenis] = useState<string[]>([]);
+  const [kategori, setKategori] = useState<{ id_kategori: number; nama_kategori: string }[]>([]);
+  const [selectedKategori, setSelectedKategori] = useState("");
   const [selectedJenis, setSelectedJenis] = useState("");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -39,6 +43,7 @@ const Catalog: React.FC = () => {
         ]);
         setProducts(catalog);
         setJenis(filters.jenis || []);
+        setKategori(filters.kategori || []);
       } catch {
         setError("Katalog tidak dapat dimuat. Silakan coba lagi.");
       } finally {
@@ -50,11 +55,13 @@ const Catalog: React.FC = () => {
 
   const visibleProducts = products.filter((product) => {
     const matchesJenis = !selectedJenis || product.nama_jenis === selectedJenis;
+    const matchesKategori =
+      !selectedKategori || String(product.id_kategori) === selectedKategori;
     const normalizedSearch = search.trim().toLowerCase();
     const matchesSearch =
       !normalizedSearch ||
       product.nama_jamu.toLowerCase().includes(normalizedSearch);
-    return matchesJenis && matchesSearch;
+    return matchesKategori && matchesJenis && matchesSearch;
   });
 
   return (
@@ -82,7 +89,7 @@ const Catalog: React.FC = () => {
             </Link>
           </div>
 
-          <div className="mb-8 grid gap-3 rounded-2xl bg-white p-4 shadow-md sm:grid-cols-[1fr_240px]">
+          <div className="mb-8 grid gap-3 rounded-2xl bg-white p-4 shadow-md sm:grid-cols-[1fr_220px_240px]">
             <label className="flex flex-col gap-2 text-sm font-semibold text-gray-700">
               Cari nama jamu
               <input
@@ -92,6 +99,21 @@ const Catalog: React.FC = () => {
                 placeholder="Contoh: Galian Rapat"
                 className="min-h-11 rounded-xl border border-gray-300 px-4 text-base font-normal outline-none focus:border-[#967515] focus:ring-2 focus:ring-[#967515]/30"
               />
+            </label>
+            <label className="flex flex-col gap-2 text-sm font-semibold text-gray-700">
+              Filter kategori
+              <select
+                value={selectedKategori}
+                onChange={(event) => setSelectedKategori(event.target.value)}
+                className="min-h-11 rounded-xl border border-gray-300 bg-white px-4 text-base font-normal outline-none focus:border-[#967515] focus:ring-2 focus:ring-[#967515]/30"
+              >
+                <option value="">Semua kategori</option>
+                {kategori.map((item) => (
+                  <option key={item.id_kategori} value={item.id_kategori}>
+                    {item.nama_kategori}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className="flex flex-col gap-2 text-sm font-semibold text-gray-700">
               Filter jenis dari database
