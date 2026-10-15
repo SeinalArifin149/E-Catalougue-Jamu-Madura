@@ -1,6 +1,8 @@
 flask
 flask-cors
 scikit-learn
+joblib
+Sastrawi
 pandas
 nltk
 sqlalchemy
