@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 // Import instance 'api' kustom kita yang mengarah ke Vercel online
 import api from '../../api/axiosConfig'; 
 
@@ -13,33 +13,51 @@ const DetailProduk: React.FC<ProductDetailProps> = ({ isOpen, onClose, product }
   const [currentProduct, setCurrentProduct] = useState<any>(null);
   const [rekomendasiTerkait, setRekomendasiTerkait] = useState<any[]>([]);
   const [loadingTerkait, setLoadingTerkait] = useState<boolean>(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
+  const requestIdRef = useRef(0);
 
   // URL base untuk memanggil gambar yang tersimpan di static uploads Flask Vercel
   const BASE_BACKEND_URL = 'https://e-catalougue-jamu-madura.vercel.app';
 
   // --- FUNGSI AMBIL DATA DETAIL + SARAN TERKAIT DARI BACKEND ONLINE ---
-  const muatDetailDanSaran = async (idJamu: number) => {
+  const muatDetailDanSaran = async (idJamu: number, previewProduct?: any) => {
+    const requestId = ++requestIdRef.current;
     setLoadingTerkait(true);
+    setDetailError(null);
+    setRekomendasiTerkait([]);
+    if (previewProduct) {
+      setCurrentProduct(previewProduct);
+    }
+
     try {
       // Ubah fetch lokal menjadi api.get kustom Axios
       const response = await api.get(`/jamu/${idJamu}`);
       const jsonResult = response.data;
       
-      if (jsonResult.status === 'success') {
+      if (requestId !== requestIdRef.current) return;
+
+      if (jsonResult.status === 'success' && jsonResult.data) {
         setCurrentProduct(jsonResult.data);
         setRekomendasiTerkait(jsonResult.jamu_terkait || []);
+      } else {
+        throw new Error(jsonResult.message || 'Data detail jamu tidak tersedia.');
       }
     } catch (error) {
       console.error("Gagal memuat jamu terkait:", error);
+      if (requestId === requestIdRef.current) {
+        setDetailError("Detail terbaru tidak dapat dimuat. Data kartu yang dipilih tetap ditampilkan.");
+      }
     } finally { 
-      setLoadingTerkait(false);
+      if (requestId === requestIdRef.current) {
+        setLoadingTerkait(false);
+      }
     }
   };
 
   // Trigger fungsi ketika modal dibuka pertama kali membawa properti dari katalog luar
   useEffect(() => {
     if (isOpen && product?.id_jamu) {
-      muatDetailDanSaran(product.id_jamu);
+      muatDetailDanSaran(product.id_jamu, product);
     }
   }, [isOpen, product?.id_jamu]); // ✅ Diarahkan spesifik mengawasi ID jamu properti luar
 
@@ -117,6 +135,12 @@ const DetailProduk: React.FC<ProductDetailProps> = ({ isOpen, onClose, product }
                <h2 className="text-[26px] sm:text-[32px] font-bold text-center mb-6 leading-tight text-[#222] font-serif capitalize">
                  {currentProduct.nama_jamu}
                </h2>
+
+               {detailError && (
+                 <p className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-center text-xs text-amber-800">
+                   {detailError}
+                 </p>
+               )}
                
                <div className="w-full overflow-hidden rounded-xl border border-neutral-500/40 shadow-lg mb-6">
                  <table className="w-full text-[13px] sm:text-[14px] bg-[#323232] text-[#f5f5f5] table-fixed border-collapse">
@@ -204,7 +228,7 @@ const DetailProduk: React.FC<ProductDetailProps> = ({ isOpen, onClose, product }
                      rekomendasiTerkait.map((itemRelated) => (
                         <div 
                            key={itemRelated.id_jamu}
-                           onClick={() => muatDetailDanSaran(itemRelated.id_jamu)}
+                           onClick={() => muatDetailDanSaran(itemRelated.id_jamu, itemRelated)}
                            className="bg-[#eef6ec] p-2.5 rounded-[15px] shadow border border-green-100 hover:-translate-y-1 hover:shadow-lg cursor-pointer transition-all duration-300 flex flex-col items-center text-center group"
                         >
                            <div className="w-full aspect-square rounded-xl overflow-hidden bg-orange-100 border border-orange-200 mb-2 shrink-0">

@@ -107,7 +107,10 @@ class TextPreprocessor:
         text = text.translate(str.maketrans("", "", string.punctuation))
         text = re.sub(r"\s+", " ", text).strip()
         tokens = text.split()
-        tokens = [word for word in tokens if word not in self.stop_words]
+        stop_words = getattr(self, "stop_words", None)
+        if stop_words is None:
+            stop_words = getattr(self, "stopwords", set())
+        tokens = [word for word in tokens if word not in stop_words]
         return " ".join(tokens)
 
 
@@ -129,27 +132,22 @@ preprocessor = None
 scaler = None
 label_encoder = None
 ml_load_error = None
+text_load_error = None
 kamus_dict = {}
 
-def load_ml_artifacts():
-    """Muat dependency dan artefak ML hanya saat fitur rekomendasi dipakai."""
-    global model_ml, tfidf_vectorizer, preprocessor, scaler, label_encoder
-    global ml_load_error
+def load_text_artifacts():
+    """Muat artefak yang diperlukan untuk pencarian kemiripan teks."""
+    global tfidf_vectorizer, preprocessor, text_load_error
 
-    if ml_load_error is not None:
-        raise RuntimeError("Fitur rekomendasi ML tidak tersedia.") from ml_load_error
-    if model_ml is not None:
+    if text_load_error is not None:
+        raise RuntimeError("Fitur pencarian teks tidak tersedia.") from text_load_error
+    if preprocessor is not None and tfidf_vectorizer is not None:
         return
 
     try:
         import joblib
 
-        required_files = [
-            MODEL_PATH,
-            TFIDF_PATH,
-            PREPROCESSOR_PATH,
-            LABEL_ENCODER_PATH,
-        ]
+        required_files = [TFIDF_PATH, PREPROCESSOR_PATH]
         missing_files = [str(path) for path in required_files if not path.is_file()]
         if missing_files:
             raise FileNotFoundError(
@@ -158,6 +156,32 @@ def load_ml_artifacts():
 
         preprocessor = joblib.load(PREPROCESSOR_PATH)
         tfidf_vectorizer = joblib.load(TFIDF_PATH)
+    except Exception as exc:
+        text_load_error = exc
+        logger.exception("Gagal memuat artefak teks NLP.")
+        raise RuntimeError("Fitur pencarian teks tidak tersedia.") from exc
+
+
+def load_ml_artifacts():
+    """Muat model klasifikasi dan artefak NLP pendukung secara lazy."""
+    global model_ml, scaler, label_encoder, ml_load_error
+
+    if ml_load_error is not None:
+        raise RuntimeError("Fitur klasifikasi ML tidak tersedia.") from ml_load_error
+    if model_ml is not None:
+        return
+
+    try:
+        import joblib
+
+        load_text_artifacts()
+        required_files = [MODEL_PATH, LABEL_ENCODER_PATH]
+        missing_files = [str(path) for path in required_files if not path.is_file()]
+        if missing_files:
+            raise FileNotFoundError(
+                "Artefak wajib tidak ditemukan: " + ", ".join(missing_files)
+            )
+
         label_encoder = joblib.load(LABEL_ENCODER_PATH)
 
         if SCALER_PATH.is_file():
@@ -217,7 +241,7 @@ def typo_correction(text):
 
 def transform_text(texts):
     """Mengubah daftar teks menjadi matriks fitur TF-IDF."""
-    load_ml_artifacts()
+    load_text_artifacts()
     if preprocessor is None or tfidf_vectorizer is None:
         raise RuntimeError("Preprocessor/TF-IDF belum berhasil dimuat.")
 
@@ -227,7 +251,7 @@ def transform_text(texts):
 
 def predict_class(text):
     """Prediksi kategori dengan model Keras."""
-    load_ml_artifacts()
+    load_text_artifacts()
     if model_ml is None or label_encoder is None:
         raise RuntimeError("Model Keras atau label encoder belum tersedia.")
 
@@ -261,7 +285,7 @@ def predict_class(text):
 
 def rank_jamu_by_similarity(query_text, jamu_items, limit=None):
     """Urutkan jamu berdasarkan cosine similarity TF-IDF."""
-    load_ml_artifacts()
+    load_text_artifacts()
     if not jamu_items or tfidf_vectorizer is None or preprocessor is None:
         return []
 
@@ -360,8 +384,12 @@ def get_jamu_by_id(id_jamu):
         jamu_utama_dict = target.to_dict()
         saran_jamu_lainnya = []
 
-        if len(all_jamu) > 1 and preprocessor is not None and tfidf_vectorizer is not None:
+        if len(all_jamu) > 1:
             try:
+                # Artefak NLP dimuat saat detail pertama kali dibuka. Tanpa ini,
+                # kondisi preprocessor sebelumnya selalu kosong dan sistem
+                # langsung memilih lima data pertama sebagai fallback.
+                load_text_artifacts()
                 matrix_query = transform_text([str(target.khasiat or "")])
                 matrix_dataset = transform_text([
                     str(item.khasiat or "") for item in all_jamu
@@ -688,8 +716,9 @@ def dapatkan_rekomendasi_ml():
         semua_jamu = Jamu.query.all()
         hasil = []
 
-        if semua_jamu and preprocessor is not None and tfidf_vectorizer is not None:
+        if semua_jamu:
             try:
+                load_text_artifacts()
                 hasil = rank_jamu_by_similarity(
                     teks_terkoreksi,
                     semua_jamu,
