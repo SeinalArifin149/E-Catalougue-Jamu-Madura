@@ -30,10 +30,6 @@ const Recommendation: React.FC = () => {
 
   // Filter limit hasil rekomendasi (5 atau 10, default 5)
   const [limit, setLimit] = useState<number>(5);
-  // Metadata model NLP
-  const [prediksiLabel, setPrediksiLabel] = useState<string>("");
-  const [confidence, setConfidence] = useState<number | null>(null);
-
   // 🛰️ FUNGSI HIT API BACKEND FLASK UNTUK MENDAPATKAN REKOMENDASI ML ONLINE
   const ambilRekomendasiML = async (queryTeks: string, skipCorrection: boolean = false) => {
     if (!queryTeks.trim()) return;
@@ -53,8 +49,6 @@ const Recommendation: React.FC = () => {
       
       if (jsonResult.status === 'success') {
         setDataRekomendasi(jsonResult.data || []);
-        setPrediksiLabel(jsonResult.prediksi_label || "");
-        setConfidence(jsonResult.confidence !== undefined ? jsonResult.confidence : null);
         if (jsonResult.teks_asli && jsonResult.teks_terkoreksi && jsonResult.teks_asli.toLowerCase() !== jsonResult.teks_terkoreksi.toLowerCase()) {
           setSuggestion({
             asli: jsonResult.teks_asli,
@@ -66,15 +60,11 @@ const Recommendation: React.FC = () => {
         }
       } else {
         setDataRekomendasi([]);
-        setPrediksiLabel("");
-        setConfidence(null);
         setSuggestion(null);
       }
     } catch (error) {
       console.error("Gagal mengambil data rekomendasi ML:", error);
       setDataRekomendasi([]);
-      setPrediksiLabel("");
-      setConfidence(null);
       setSuggestion(null);
     } finally {
       setLoading(false);
@@ -226,30 +216,7 @@ const Recommendation: React.FC = () => {
             <>
               {/* TOOLBAR: ANALISIS NLP & FILTER LIMIT */}
               {dataRekomendasi.length > 0 && (
-                <div className="mb-10 p-5 bg-white/80 backdrop-blur-md border border-emerald-100 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-md animate-[slideDownFade_0.5s_ease-out_forwards]">
-                  <div className="flex items-center gap-3">
-                    {prediksiLabel && confidence !== null ? (
-                      <>
-                        <span className="flex h-3 w-3 relative">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                        </span>
-                        <p className="text-[16px] font-medium text-gray-800">
-                          Kategori Keluhan Terdeteksi: <span className="font-bold text-emerald-800 capitalize">{prediksiLabel.replace('_', ' ')}</span>
-                          {confidence !== null && (
-                            <span className="text-gray-500 text-sm ml-2">
-                              (Tingkat Keyakinan: {(confidence * 100).toFixed(0)}%)
-                            </span>
-                          )}
-                        </p>
-                      </>
-                    ) : (
-                      <p className="text-[16px] font-medium text-gray-800">
-                        Menampilkan rekomendasi jamu berdasarkan kemiripan keluhan Anda.
-                      </p>
-                    )}
-                  </div>
-                  
+                <div className="mb-10 p-5 bg-white/80 backdrop-blur-md border border-emerald-100 rounded-2xl flex justify-end shadow-md animate-[slideDownFade_0.5s_ease-out_forwards]">
                   {/* Limit Selector (Dropdown 5 atau 10) */}
                   <div className="flex items-center gap-3 bg-[#e8dbdf]/60 p-1.5 rounded-xl border border-gray-300/40 w-full md:w-auto justify-between md:justify-start">
                     <span className="text-xs font-bold text-gray-700 px-2">Tampilkan:</span>
