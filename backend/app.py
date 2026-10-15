@@ -1,4 +1,5 @@
 import os
+import secrets
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 import logging
@@ -62,7 +63,18 @@ app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 # with db postgree + Sqlite3
 # app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', "sqlite:///" + os.path.join(os.path.abspath(os.path.dirname(__file__)), 'database.db'))
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['JWT_SECRET_KEY'] = 'rahasia-jamu-madura-123' 
+jwt_secret = os.environ.get("JWT_SECRET_KEY", "").strip()
+is_production = bool(
+    os.environ.get("VERCEL")
+    or os.environ.get("VERCEL_ENV")
+    or os.environ.get("FLASK_ENV") == "production"
+)
+if not jwt_secret:
+    if is_production:
+        raise RuntimeError("JWT_SECRET_KEY wajib dikonfigurasi pada deployment production.")
+    jwt_secret = secrets.token_urlsafe(32)
+    logger.warning("JWT_SECRET_KEY tidak dikonfigurasi; memakai secret sementara untuk lokal.")
+app.config['JWT_SECRET_KEY'] = jwt_secret
 
 CORS(app)
 jwt = JWTManager(app)

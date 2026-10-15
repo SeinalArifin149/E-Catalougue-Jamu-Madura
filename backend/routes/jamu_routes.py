@@ -37,6 +37,7 @@ MODEL_DIR = BACKEND_ROOT / "NLP" / "nlp5"
 if not MODEL_DIR.is_dir():
     MODEL_DIR = PROJECT_ROOT / "NLP" / "nlp5"
 MODEL_PATH = MODEL_DIR / "model_mlp.keras"
+PIPELINE_PATH = BACKEND_ROOT / "model_pipeline.pkl"
 TFIDF_PATH = MODEL_DIR / "tfidf.pkl"
 PREPROCESSOR_PATH = MODEL_DIR / "preprocessor.pkl"
 SCALER_PATH = MODEL_DIR / "scaler.pkl"
@@ -129,6 +130,7 @@ __main__.TeksPrepocessor = TextPreprocessor
 # ============================================================
 
 model_ml = None
+classifier_pipeline = None
 tfidf_vectorizer = None
 preprocessor = None
 scaler = None
@@ -166,7 +168,7 @@ def load_text_artifacts():
 
 def load_ml_artifacts():
     """Muat model klasifikasi dan artefak NLP pendukung secara lazy."""
-    global model_ml, scaler, label_encoder, ml_load_error
+    global model_ml, classifier_pipeline, scaler, label_encoder, ml_load_error
 
     if ml_load_error is not None:
         raise RuntimeError("Fitur klasifikasi ML tidak tersedia.") from ml_load_error
@@ -175,6 +177,11 @@ def load_ml_artifacts():
 
     try:
         import joblib
+
+        if PIPELINE_PATH.is_file():
+            classifier_pipeline = joblib.load(PIPELINE_PATH)
+            logger.info("Pipeline klasifikasi berhasil dimuat dari %s", PIPELINE_PATH)
+            return
 
         load_text_artifacts()
         required_files = [MODEL_PATH, LABEL_ENCODER_PATH]
@@ -252,7 +259,18 @@ def transform_text(texts):
 
 
 def predict_class(text):
-    """Prediksi kategori dengan model Keras."""
+    """Prediksi kategori memakai pipeline penelitian atau model Keras."""
+    if classifier_pipeline is not None:
+        import numpy as np
+
+        predicted_label = str(classifier_pipeline.predict([text])[0])
+        confidence = None
+        if hasattr(classifier_pipeline, "predict_proba"):
+            probabilities = np.asarray(classifier_pipeline.predict_proba([text]))
+            if probabilities.ndim == 2 and probabilities.shape[0] > 0:
+                confidence = float(np.max(probabilities[0]))
+        return predicted_label, confidence
+
     load_text_artifacts()
     if model_ml is None or label_encoder is None:
         raise RuntimeError("Model Keras atau label encoder belum tersedia.")
@@ -611,11 +629,30 @@ def hapus_jamu(id_hapus):
 @jamu_bp.route("/jamu/public", methods=["GET"])
 def get_public_jamu():
     try:
-        hasil_json = [item.to_dict() for item in Jamu.query.all()]
+        query = Jamu.query
+        search = request.args.get("q", "").strip()
+        jenis = request.args.get("jenis", "").strip()
+        if search:
+            query = query.filter(Jamu.nama_jamu.ilike(f"%{search}%"))
+        if jenis:
+            query = query.filter(Jamu.id_jenis == jenis if jenis.isdigit() else False)
+
+        page = max(request.args.get("page", 1, type=int), 1)
+        per_page = min(max(request.args.get("per_page", 24, type=int), 1), 100)
+        pagination = query.order_by(Jamu.nama_jamu.asc()).paginate(
+            page=page, per_page=per_page, error_out=False
+        )
+        hasil_json = [item.to_dict() for item in pagination.items]
         return jsonify({
             "status": "success",
             "message": "Data katalog jamu publik berhasil diambil",
             "data": hasil_json,
+            "pagination": {
+                "page": pagination.page,
+                "per_page": pagination.per_page,
+                "total": pagination.total,
+                "pages": pagination.pages,
+            },
         }), 200
     except Exception:
         logger.exception("Gagal mengambil katalog publik.")
@@ -712,36 +749,48 @@ def dapatkan_rekomendasi_ml():
             load_ml_artifacts()
             label_prediksi, confidence = predict_class(teks_terkoreksi)
         except Exception:
-            # Similarity TF-IDF tetap dapat memberikan rekomendasi tanpa
-            # classifier Keras, misalnya ketika runtime TensorFlow tidak ada.
             logger.exception("Prediksi kategori tidak tersedia.")
+            return jsonify({
+                "status": "error",
+                "message": "Model klasifikasi belum tersedia di server.",
+                "data": [],
+            }), 503
 
         semua_jamu = Jamu.query.all()
         hasil = []
 
-        if semua_jamu:
+        if label_prediksi is not None and semua_jamu:
+            normalized_label = re.sub(r"[^a-z0-9]+", " ", label_prediksi.lower()).strip()
+            matching_items = [
+                item for item in semua_jamu
+                if normalized_label
+                and normalized_label == re.sub(
+                    r"[^a-z0-9]+",
+                    " ",
+                    (item.jenis_rel.nama_jenis if item.jenis_rel else "").lower(),
+                ).strip()
+            ]
             try:
                 load_text_artifacts()
                 hasil = rank_jamu_by_similarity(
                     teks_terkoreksi,
-                    semua_jamu,
+                    matching_items,
                     limit=10,
                 )
             except Exception:
                 logger.exception("Pencarian similarity TF-IDF gagal.")
 
-        if not hasil:
-            hasil = manual_jamu_fallback(
-                teks_terkoreksi,
-                semua_jamu,
-                limit=10,
-            )
-
         return jsonify({
             "status": "success",
-            "message": "Rekomendasi berhasil diproses",
+            "message": (
+                "Prediksi berhasil, tetapi belum ada relasi kategori produk "
+                "yang cocok di database."
+                if label_prediksi is not None and not hasil
+                else "Rekomendasi berhasil diproses"
+            ),
             "prediksi_label": label_prediksi,
             "confidence": confidence,
+            "kategori_produk_tersedia": bool(hasil),
             "teks_asli": teks_input,
             "teks_terkoreksi": teks_terkoreksi,
             "data": hasil,

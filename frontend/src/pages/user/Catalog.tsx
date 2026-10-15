@@ -1,193 +1,176 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import DetailProduk from "./Detail_produk";
+import NavbarUser from "../../components/navbar_user";
+import FooterUser from "../../components/footer_user";
+import {
+  fetchFilterOptionsPublik,
+  fetchKatalogJamuPublik,
+} from "../../services/user_dashboard";
 
-// --- DATA DUMMY PRODUK (Dibuat 15 item agar pas 5 kolom x 3 baris) ---
-const products = [
-  { id: 1, name: "Jamu Pelancar Haid", desc: "Membantu melancarkan siklus haid dan meredakan nyeri", img: "https://images.unsplash.com/photo-1615486171448-4fb627d2c3be?w=150&h=150&fit=crop" },
-  { id: 2, name: "Beras Kencur", desc: "Menambah energi dan mengurangi pegal linu", img: "https://images.unsplash.com/photo-1599305090598-fe179d501227?w=150&h=150&fit=crop" },
-  { id: 3, name: "Kunyit Asam", desc: "Meredakan nyeri haid dan melancarkan peredaran darah", img: "https://images.unsplash.com/photo-1628151012353-bd1fb9c74bca?w=150&h=150&fit=crop" },
-  { id: 4, name: "Sidomuncul JSH", desc: "Mendetoks racun di dalam saluran pencernaan tubuh", img: "" }, // Kosongkan foto untuk test
-  { id: 5, name: "Pegal Linu", desc: "Meredakan pegal dan nyeri otot setelah beraktivitas", img: "https://images.unsplash.com/photo-1608265386093-9b242ca91b6e?w=150&h=150&fit=crop" },
-  { id: 6, name: "Temulawak", desc: "Meningkatkan nafsu makan dan menjaga kesehatan hati", img: "https://images.unsplash.com/photo-1615486511484-92e1720543bc?w=150&h=150&fit=crop" },
-  { id: 7, name: "Sehat Wanita", desc: "Menjaga kesehatan dan keseimbangan hormon wanita", img: "https://images.unsplash.com/photo-1556910115-467ea3f1d933?w=150&h=150&fit=crop" },
-  { id: 8, name: "Sehat Pria", desc: "Membantu menjaga stamina dan vitalitas tubuh pria", img: "https://images.unsplash.com/photo-1564222256577-45e728f2c611?w=150&h=150&fit=crop" },
-  { id: 9, name: "Jahe Merah AMH", desc: "Meningkatkan daya tahan tubuh serta meredakan gejala masuk angin", img: "" }, // Kosongkan foto
-  { id: 10, name: "Kunci Sirih", desc: "Menjaga kesehatan organ kewanitaan dan kurangi bau tidak sedap", img: "https://images.unsplash.com/photo-1620888998522-8d76a742ce44?w=150&h=150&fit=crop" },
-  { id: 11, name: "Pahitan", desc: "Membersihkan darah kotor dan mengatasi gatal-gatal", img: "https://images.unsplash.com/photo-1587049352847-8d4e8941554a?w=150&h=150&fit=crop" },
-  { id: 12, name: "Cabe Puyang", desc: "Menghilangkan kesemutan dan pegal-pegal di tubuh", img: "https://images.unsplash.com/photo-1596484552834-6a58f850d0a1?w=150&h=150&fit=crop" },
-  { id: 13, name: "Sari Rapet", desc: "Mengencangkan otot kewanitaan dan meremajakan kulit", img: "https://images.unsplash.com/photo-1611078813636-c3a105c92842?w=150&h=150&fit=crop" },
-  { id: 14, name: "Uyup-Uyup", desc: "Meningkatkan produksi ASI bagi ibu menyusui", img: "" }, // Kosong
-  { id: 15, name: "Wedang Uwuh", desc: "Menghangatkan tubuh secara alami saat cuaca dingin", img: "https://images.unsplash.com/photo-1576092762791-dd9e2220c4c7?w=150&h=150&fit=crop" },
-];
+type Product = {
+  id_jamu: number;
+  nama_jamu: string;
+  khasiat?: string | null;
+  image?: string | null;
+  nama_jenis?: string;
+  nama_kabupaten?: string;
+};
+
+const BASE_BACKEND_URL = "https://e-catalougue-jamu-madura.vercel.app";
 
 const Catalog: React.FC = () => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [jenis, setJenis] = useState<string[]>([]);
+  const [selectedJenis, setSelectedJenis] = useState("");
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  useEffect(() => {
+    const loadCatalog = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [catalog, filters] = await Promise.all([
+          fetchKatalogJamuPublik(),
+          fetchFilterOptionsPublik(),
+        ]);
+        setProducts(catalog);
+        setJenis(filters.jenis || []);
+      } catch {
+        setError("Katalog tidak dapat dimuat. Silakan coba lagi.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    void loadCatalog();
+  }, []);
+
+  const visibleProducts = products.filter((product) => {
+    const matchesJenis = !selectedJenis || product.nama_jenis === selectedJenis;
+    const normalizedSearch = search.trim().toLowerCase();
+    const matchesSearch =
+      !normalizedSearch ||
+      product.nama_jamu.toLowerCase().includes(normalizedSearch);
+    return matchesJenis && matchesSearch;
+  });
+
   return (
-    <>
-      {/* CSS Tambahan untuk Efek Hover agar UI terasa lebih modern dan interaktif */}
-      <style>
-        {`
-          .product-card {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-          }
-          .product-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-          }
-          .nav-btn {
-            transition: background-color 0.2s ease, transform 0.2s ease;
-          }
-          .nav-btn:hover {
-            background-color: #e0b020 !important;
-            transform: scale(1.05);
-          }
-          .page-num {
-            transition: color 0.2s ease;
-          }
-          .page-num:hover {
-            color: #D4AF37;
-          }
-          .page-active {
-            color: #D4AF37;
-            border-bottom: 2px solid #D4AF37;
-          }
-        `}
-      </style>
-
-      <div style={{
-        background: "linear-gradient(135deg, #4b535a 0%, #353b40 100%)", // Latar belakang gradient yang elegan
-        minHeight: "100vh",
-        color: "white",
-        display: "flex",
-        flexDirection: "column",
-        fontFamily: "'Inter', sans-serif",
-      }}>
-        
-        {/* HEADER */}
-        <header style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "30px 60px",
-        }}>
-          <div style={{
-            fontSize: "36px",
-            fontWeight: "bold",
-            fontFamily: "'Playfair Display', serif",
-            letterSpacing: "1px"
-          }}>JamuKita</div>
-          <nav style={{ display: "flex", gap: "20px" }}>
-            <Link to="/" className="nav-btn" style={{
-              background: "#c59b15", 
-              color: "white", 
-              border: "none", 
-              padding: "10px 25px", 
-              borderRadius: "30px", 
-              fontWeight: "600", 
-              textDecoration: "none"
-            }}>Home</Link>
-            <Link to="/catalog" className="nav-btn" style={{
-              background: "#c59b15", 
-              color: "white", 
-              border: "none", 
-              padding: "10px 25px", 
-              borderRadius: "30px", 
-              fontWeight: "600", 
-              textDecoration: "none"
-            }}>Catalog</Link>
-          </nav>
-        </header>
-
-        {/* KONTEN UTAMA */}
-        <main style={{ flexGrow: 1, padding: "10px 60px 40px", display: "flex", flexDirection: "column" }}>
-          
-          <h1 style={{
-            fontSize: "46px",
-            fontWeight: "bold",
-            textAlign: "center",
-            margin: "0 0 50px 0",
-            fontFamily: "'Playfair Display', serif",
-            textShadow: "0 2px 4px rgba(0,0,0,0.3)" // Sedikit bayangan pada teks
-          }}>Catalog Produk JamuKita</h1>
-
-          {/* GRID KARTU PRODUK (5 Kolom x 3 Baris) */}
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(5, 1fr)",
-            gap: "25px",
-            marginBottom: "50px",
-          }}>
-            {products.map((product) => (
-              <div key={product.id} className="product-card" style={{
-                backgroundColor: "#f7f7f7",
-                borderRadius: "16px",
-                padding: "20px",
-                color: "#222",
-                display: "flex",
-                flexDirection: "column",
-                boxShadow: "0 4px 10px rgba(0,0,0,0.15)",
-              }}>
-                {/* Bagian Atas: Gambar (Kiri) & Judul (Kanan) */}
-                <div style={{ display: "flex", alignItems: "center", gap: "15px", marginBottom: "15px", minHeight: "75px" }}>
-                  {product.img ? (
-                    <img src={product.img} alt={product.name} style={{
-                      width: "70px", height: "70px", borderRadius: "12px", objectFit: "cover", flexShrink: 0,
-                      boxShadow: "0 2px 5px rgba(0,0,0,0.1)"
-                    }} />
-                  ) : (
-                    // Kotak placeholder jika tidak ada gambar
-                    <div style={{
-                      width: "70px", height: "70px", borderRadius: "12px", backgroundColor: "#d1d5db", 
-                      flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-                      boxShadow: "0 2px 5px rgba(0,0,0,0.1)"
-                    }}>
-                       <span style={{fontSize:"10px", color:"#888"}}>No Image</span>
-                    </div>
-                  )}
-                  <div style={{
-                    fontSize: "16px", fontWeight: "bold", fontFamily: "'Playfair Display', serif", lineHeight: "1.2"
-                  }}>{product.name}</div>
-                </div>
-                
-                {/* Bagian Bawah: Deskripsi */}
-                <div style={{
-                  fontSize: "13px", textAlign: "center", lineHeight: "1.5", color: "#555", marginTop: "auto"
-                }}>
-                  {product.desc}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* BAGIAN BAWAH: Tombol & Paginasi */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "auto" }}>
-            
-            {/* Tombol Kiri Bawah */}
-            <Link to="/detail-produk" className="nav-btn" style={{
-              background: "#c59b15",
-              color: "white",
-              padding: "12px 25px",
-              borderRadius: "10px", // Bentuk sedikit berbeda dari tombol navbar
-              fontWeight: "bold",
-              textDecoration: "none",
-              boxShadow: "0 4px 6px rgba(0,0,0,0.2)"
-            }}>
-              Lihat semua Detail Produk
-            </Link>
-
-            {/* Paginasi Kanan Bawah */}
-            <div style={{ display: "flex", gap: "20px", alignItems: "center", fontWeight: "bold", fontSize: "16px" }}>
-              <span className="page-num page-active" style={{ cursor: "pointer", paddingBottom: "3px" }}>1</span>
-              <span className="page-num" style={{ cursor: "pointer" }}>2</span>
-              <span className="page-num" style={{ cursor: "pointer" }}>3</span>
-              <span className="page-num" style={{ cursor: "pointer" }}>4</span>
-              <span className="page-num" style={{ cursor: "pointer" }}>5</span>
-              <span className="page-num" style={{ cursor: "pointer", marginLeft: "15px" }}>Berikutnya</span>
+    <div className="flex min-h-screen flex-col bg-[#fdfbf7]">
+      <NavbarUser />
+      <main className="flex-1 px-4 pb-16 pt-32 sm:px-8 lg:px-16">
+        <div className="mx-auto w-full max-w-7xl">
+          <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="mb-2 text-sm font-semibold uppercase tracking-[0.2em] text-[#967515]">
+                Katalog resmi
+              </p>
+              <h1 className="font-serif text-4xl font-bold text-[#222] sm:text-5xl">
+                Jamu Madura
+              </h1>
+              <p className="mt-2 max-w-2xl text-gray-600">
+                Data produk ditampilkan langsung dari katalog database.
+              </p>
             </div>
-
+            <Link
+              to="/"
+              className="rounded-full bg-[#b58e1b] px-5 py-3 text-center font-semibold text-white transition hover:bg-[#967515] focus:outline-none focus:ring-2 focus:ring-[#967515] focus:ring-offset-2"
+            >
+              Kembali ke beranda
+            </Link>
           </div>
-        </main>
-      </div>
-    </>
+
+          <div className="mb-8 grid gap-3 rounded-2xl bg-white p-4 shadow-md sm:grid-cols-[1fr_240px]">
+            <label className="flex flex-col gap-2 text-sm font-semibold text-gray-700">
+              Cari nama jamu
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Contoh: Galian Rapat"
+                className="min-h-11 rounded-xl border border-gray-300 px-4 text-base font-normal outline-none focus:border-[#967515] focus:ring-2 focus:ring-[#967515]/30"
+              />
+            </label>
+            <label className="flex flex-col gap-2 text-sm font-semibold text-gray-700">
+              Filter jenis dari database
+              <select
+                value={selectedJenis}
+                onChange={(event) => setSelectedJenis(event.target.value)}
+                className="min-h-11 rounded-xl border border-gray-300 bg-white px-4 text-base font-normal outline-none focus:border-[#967515] focus:ring-2 focus:ring-[#967515]/30"
+              >
+                <option value="">Semua jenis</option>
+                {jenis.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          {loading && (
+            <div className="rounded-2xl bg-white px-6 py-16 text-center shadow-md" role="status">
+              Memuat katalog...
+            </div>
+          )}
+          {!loading && error && (
+            <div className="rounded-2xl border border-red-200 bg-red-50 px-6 py-10 text-center text-red-800" role="alert">
+              {error}
+            </div>
+          )}
+          {!loading && !error && visibleProducts.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-16 text-center text-gray-600">
+              Tidak ada produk yang sesuai dengan pencarian atau filter.
+            </div>
+          )}
+          {!loading && !error && visibleProducts.length > 0 && (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {visibleProducts.map((product) => (
+                <button
+                  type="button"
+                  key={product.id_jamu}
+                  onClick={() => setSelectedProduct(product)}
+                  className="flex min-h-[310px] flex-col overflow-hidden rounded-2xl bg-white text-left shadow-md transition hover:-translate-y-1 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-[#967515] focus:ring-offset-2"
+                >
+                  <div className="flex aspect-[4/3] items-center justify-center bg-gradient-to-br from-yellow-100 to-orange-300 p-3">
+                    {product.image ? (
+                      <img
+                        src={`${BASE_BACKEND_URL}/static/uploads/${product.image}`}
+                        alt={product.nama_jamu}
+                        className="h-full w-full rounded-xl object-cover"
+                      />
+                    ) : (
+                      <span className="px-4 text-center font-serif text-lg font-bold text-red-700">
+                        {product.nama_jamu}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-1 flex-col p-4">
+                    <span className="mb-2 text-xs font-bold uppercase tracking-wide text-[#967515]">
+                      {product.nama_jenis || "Tanpa jenis"}
+                    </span>
+                    <h2 className="line-clamp-2 text-lg font-bold text-gray-900">
+                      {product.nama_jamu}
+                    </h2>
+                    <p className="mt-2 line-clamp-3 text-sm text-gray-600">
+                      {product.khasiat || "Informasi khasiat tidak tersedia."}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </main>
+      <FooterUser />
+      <DetailProduk
+        isOpen={selectedProduct !== null}
+        onClose={() => setSelectedProduct(null)}
+        product={selectedProduct}
+      />
+    </div>
   );
 };
 

@@ -6,6 +6,7 @@ sqlalchemy
 pymysql
 joblib
 scikit-learn
+imbalanced-learn
 
 python-dotenv
 psycopg2-binary

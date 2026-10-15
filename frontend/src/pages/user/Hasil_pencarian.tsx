@@ -25,6 +25,9 @@ const Recommendation: React.FC = () => {
   // State Input Teks & Penampung Data Hasil Prediksi Machine Learning
   const [searchText, setSearchText] = useState(kataKunciAwal);
   const [dataRekomendasi, setDataRekomendasi] = useState<any[]>([]);
+  const [prediksiLabel, setPrediksiLabel] = useState<string | null>(null);
+  const [predictionMessage, setPredictionMessage] = useState<string | null>(null);
+  const [resultError, setResultError] = useState<string | null>(null);
   const [suggestion, setSuggestion] = useState<{ asli: string, terkoreksi: string, mode: 'showing_corrected' | 'showing_original' } | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -35,6 +38,9 @@ const Recommendation: React.FC = () => {
     if (!queryTeks.trim()) return;
     
     setLoading(true);
+    setResultError(null);
+    setPrediksiLabel(null);
+    setPredictionMessage(null);
     if (!skipCorrection) {
       setSuggestion(null); // Reset suggestion saat mencari baru
     }
@@ -49,6 +55,8 @@ const Recommendation: React.FC = () => {
       
       if (jsonResult.status === 'success') {
         setDataRekomendasi(jsonResult.data || []);
+        setPrediksiLabel(jsonResult.prediksi_label || null);
+        setPredictionMessage(jsonResult.message || null);
         if (jsonResult.teks_asli && jsonResult.teks_terkoreksi && jsonResult.teks_asli.toLowerCase() !== jsonResult.teks_terkoreksi.toLowerCase()) {
           setSuggestion({
             asli: jsonResult.teks_asli,
@@ -60,11 +68,17 @@ const Recommendation: React.FC = () => {
         }
       } else {
         setDataRekomendasi([]);
+        setPrediksiLabel(null);
+        setPredictionMessage(null);
+        setResultError(jsonResult.message || "Pencarian tidak dapat diproses.");
         setSuggestion(null);
       }
     } catch (error) {
       console.error("Gagal mengambil data rekomendasi ML:", error);
       setDataRekomendasi([]);
+      setPrediksiLabel(null);
+      setPredictionMessage(null);
+      setResultError("Klasifikasi tidak tersedia. Pastikan artefak model sudah dikonfigurasi.");
       setSuggestion(null);
     } finally {
       setLoading(false);
@@ -214,6 +228,20 @@ const Recommendation: React.FC = () => {
             </div>
           ) : (
             <>
+              {resultError && (
+                <div className="mb-8 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-center text-red-800" role="alert">
+                  {resultError}
+                </div>
+              )}
+              {prediksiLabel && (
+                <div className="mb-8 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-center text-emerald-900 shadow-sm">
+                  Kategori hasil klasifikasi model:{" "}
+                  <strong>{prediksiLabel}</strong>
+                  {predictionMessage && (
+                    <p className="mt-2 text-sm text-emerald-800">{predictionMessage}</p>
+                  )}
+                </div>
+              )}
               {/* TOOLBAR: ANALISIS NLP & FILTER LIMIT */}
               {dataRekomendasi.length > 0 && (
                 <div className="mb-10 p-5 bg-white/80 backdrop-blur-md border border-emerald-100 rounded-2xl flex justify-end shadow-md animate-[slideDownFade_0.5s_ease-out_forwards]">
