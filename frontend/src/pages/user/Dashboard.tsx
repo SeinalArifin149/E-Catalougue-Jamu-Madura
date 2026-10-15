@@ -167,17 +167,18 @@ const UserDashboard: React.FC = () => {
             </p>
           </div>
 
+
 <form
   onSubmit={handleSearch}
-  className="relative z-20 flex w-full max-w-[800px] min-w-0 flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-0 bg-[#757575]/95 backdrop-blur-md rounded-[24px] sm:rounded-full px-4 sm:px-8 py-4 sm:py-6 shadow-2xl transition-all duration-300 focus-within:ring-4 focus-within:ring-[#b58e1b]/40"
+  className="relative z-30 flex w-full max-w-[800px] min-w-0 items-center gap-2 sm:gap-4 rounded-2xl sm:rounded-full bg-[#555]/95 px-3 sm:px-8 py-3 sm:py-5 shadow-2xl backdrop-blur-md focus-within:ring-4 focus-within:ring-[#b58e1b]/40"
 >
   <button
     type="submit"
-    className="focus:outline-none group p-1 flex-shrink-0 self-start sm:self-auto"
     aria-label="Cari keluhan"
+    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
   >
     <svg
-      className="w-7 h-7 sm:w-8 sm:h-8 text-white group-hover:scale-110 transition-transform"
+      className="h-6 w-6 text-white"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -196,12 +197,16 @@ const UserDashboard: React.FC = () => {
     type="text"
     name="keluhan"
     autoComplete="off"
-    className="block w-full flex-1 min-w-0 sm:w-auto bg-transparent border-none text-white placeholder-white/90 px-1 sm:px-6 py-2 text-base sm:text-lg md:text-xl focus:outline-none focus:ring-0"
-    placeholder="Masukkan keluhan Anda di sini..."
+    autoCorrect="on"
+    spellCheck={true}
+    enterKeyHint="search"
+    className="relative z-40 block h-12 w-full min-w-0 flex-1 touch-manipulation border-0 bg-transparent px-2 text-base text-white outline-none placeholder:text-white focus:ring-0"
+    placeholder="Masukkan keluhan Anda..."
     value={keluhan}
     onChange={(e) => setKeluhan(e.target.value)}
   />
 </form>
+
 
         </main>
       </div>
