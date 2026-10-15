@@ -167,25 +167,42 @@ const UserDashboard: React.FC = () => {
             </p>
           </div>
 
-          <form 
-            onSubmit={handleSearch}
-            className="flex w-full max-w-[800px] flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-0 bg-[#757575]/95 backdrop-blur-md rounded-[28px] sm:rounded-full px-4 sm:px-8 py-4 sm:py-6 shadow-2xl animate-[slideUpFade_1s_ease-out_0.3s_forwards] opacity-0 transition-all duration-300 focus-within:ring-4 focus-within:ring-[#b58e1b]/40"
-          >
-            <button type="submit" className="focus:outline-none group p-1 flex-shrink-0 self-start sm:self-auto" aria-label="Search">
-              <svg className="w-7 h-7 sm:w-8 sm:h-8 text-black group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24">
-                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </button>
-            
-            <input
-              ref={searchInputRef}
-              type="text"
-              className="flex-1 w-0 min-w-0 max-w-full bg-transparent border-none text-white placeholder-gray-300 px-3 sm:px-6 text-[14px] sm:text-[18px] md:text-[20px] focus:outline-none focus:ring-0"
-              placeholder="Masukkan keluhan Anda di sini..."
-              value={keluhan}
-              onChange={(e) => setKeluhan(e.target.value)}
-            />
-          </form>
+<form
+  onSubmit={handleSearch}
+  className="relative z-20 flex w-full max-w-[800px] min-w-0 flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-0 bg-[#757575]/95 backdrop-blur-md rounded-[24px] sm:rounded-full px-4 sm:px-8 py-4 sm:py-6 shadow-2xl transition-all duration-300 focus-within:ring-4 focus-within:ring-[#b58e1b]/40"
+>
+  <button
+    type="submit"
+    className="focus:outline-none group p-1 flex-shrink-0 self-start sm:self-auto"
+    aria-label="Cari keluhan"
+  >
+    <svg
+      className="w-7 h-7 sm:w-8 sm:h-8 text-white group-hover:scale-110 transition-transform"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2.5"
+        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+      />
+    </svg>
+  </button>
+
+  <input
+    ref={searchInputRef}
+    type="text"
+    name="keluhan"
+    autoComplete="off"
+    className="block w-full flex-1 min-w-0 sm:w-auto bg-transparent border-none text-white placeholder-white/90 px-1 sm:px-6 py-2 text-base sm:text-lg md:text-xl focus:outline-none focus:ring-0"
+    placeholder="Masukkan keluhan Anda di sini..."
+    value={keluhan}
+    onChange={(e) => setKeluhan(e.target.value)}
+  />
+</form>
+
         </main>
       </div>
 
