@@ -177,14 +177,13 @@ const UserDashboard: React.FC = () => {
               </svg>
             </button>
             
-            <input 
+            <input
               ref={searchInputRef}
               type="text"
-              className="flex-grow bg-transparent border-none text-white placeholder-gray-300 px-0 sm:px-6 text-[15px] sm:text-[18px] md:text-[20px] focus:outline-none focus:ring-0 min-w-0"
-              placeholder="Masukkan keluhan Anda disini yeah :)"
+              className="flex-1 w-0 min-w-0 max-w-full bg-transparent border-none text-white placeholder-gray-300 px-3 sm:px-6 text-[14px] sm:text-[18px] md:text-[20px] focus:outline-none focus:ring-0"
+              placeholder="Masukkan keluhan Anda di sini..."
               value={keluhan}
-              // ✅ DIKEMBALIKAN KE FUNGSI ASLINYA BIAR INPUT KELUHAN JALAN NORMAL
-              onChange={(e) => setKeluhan(e.target.value)} 
+              onChange={(e) => setKeluhan(e.target.value)}
             />
           </form>
         </main>
