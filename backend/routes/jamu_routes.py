@@ -705,15 +705,16 @@ def dapatkan_rekomendasi_ml():
         corrected = typo_correction(teks_input)
         teks_terkoreksi = teks_input if skip_correction else corrected
 
-        label_prediksi = "Tidak tersedia"
-        confidence = 0.0
+        label_prediksi = None
+        confidence = None
 
-        if model_ml is not None:
-            try:
-                label_prediksi, confidence = predict_class(teks_terkoreksi)
-            except Exception:
-                logger.exception("Prediksi kategori gagal.")
-                label_prediksi = "Prediksi tidak tersedia"
+        try:
+            load_ml_artifacts()
+            label_prediksi, confidence = predict_class(teks_terkoreksi)
+        except Exception:
+            # Similarity TF-IDF tetap dapat memberikan rekomendasi tanpa
+            # classifier Keras, misalnya ketika runtime TensorFlow tidak ada.
+            logger.exception("Prediksi kategori tidak tersedia.")
 
         semua_jamu = Jamu.query.all()
         hasil = []
@@ -739,8 +740,8 @@ def dapatkan_rekomendasi_ml():
         return jsonify({
             "status": "success",
             "message": "Rekomendasi berhasil diproses",
-            "prediksi_label": str(label_prediksi),
-            "confidence": float(confidence),
+            "prediksi_label": label_prediksi,
+            "confidence": confidence,
             "teks_asli": teks_input,
             "teks_terkoreksi": teks_terkoreksi,
             "data": hasil,

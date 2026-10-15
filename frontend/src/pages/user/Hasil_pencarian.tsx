@@ -228,7 +228,7 @@ const Recommendation: React.FC = () => {
               {dataRekomendasi.length > 0 && (
                 <div className="mb-10 p-5 bg-white/80 backdrop-blur-md border border-emerald-100 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-md animate-[slideDownFade_0.5s_ease-out_forwards]">
                   <div className="flex items-center gap-3">
-                    {prediksiLabel ? (
+                    {prediksiLabel && confidence !== null ? (
                       <>
                         <span className="flex h-3 w-3 relative">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -245,7 +245,7 @@ const Recommendation: React.FC = () => {
                       </>
                     ) : (
                       <p className="text-[16px] font-medium text-gray-800">
-                        Menampilkan rekomendasi jamu berdasarkan keluhan Anda.
+                        Menampilkan rekomendasi jamu berdasarkan kemiripan keluhan Anda.
                       </p>
                     )}
                   </div>
