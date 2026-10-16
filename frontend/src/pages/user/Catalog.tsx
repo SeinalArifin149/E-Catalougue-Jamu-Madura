@@ -55,8 +55,10 @@ const Catalog: React.FC = () => {
 
   const visibleProducts = products.filter((product) => {
     const matchesJenis = !selectedJenis || product.nama_jenis === selectedJenis;
+    const normalizedKategori = selectedKategori.trim().toLowerCase();
     const matchesKategori =
-      !selectedKategori || String(product.id_kategori) === selectedKategori;
+      !normalizedKategori ||
+      (product.nama_kategori || "").toLowerCase().includes(normalizedKategori);
     const normalizedSearch = search.trim().toLowerCase();
     const matchesSearch =
       !normalizedSearch ||
@@ -102,18 +104,20 @@ const Catalog: React.FC = () => {
             </label>
             <label className="flex flex-col gap-2 text-sm font-semibold text-gray-700">
               Filter kategori
-              <select
+              <input
+                type="search"
                 value={selectedKategori}
                 onChange={(event) => setSelectedKategori(event.target.value)}
+                list="kategori-options"
+                placeholder="Ketik nama kategori"
+                aria-label="Ketik atau pilih kategori"
                 className="min-h-11 rounded-xl border border-gray-300 bg-white px-4 text-base font-normal outline-none focus:border-[#967515] focus:ring-2 focus:ring-[#967515]/30"
-              >
-                <option value="">Semua kategori</option>
+              />
+              <datalist id="kategori-options">
                 {kategori.map((item) => (
-                  <option key={item.id_kategori} value={item.id_kategori}>
-                    {item.nama_kategori}
-                  </option>
+                  <option key={item.id_kategori} value={item.nama_kategori} />
                 ))}
-              </select>
+              </datalist>
             </label>
             <label className="flex flex-col gap-2 text-sm font-semibold text-gray-700">
               Filter jenis dari database
