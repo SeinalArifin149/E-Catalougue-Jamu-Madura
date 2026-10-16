@@ -171,6 +171,15 @@ const DetailProduk: React.FC<ProductDetailProps> = ({ isOpen, onClose, product }
                          {currentProduct.nama_jenis || "Tradisional"}
                        </td>
                      </tr>
+
+                     <tr className="border-b border-neutral-600/50 hover:bg-[#3a3a3a] transition-colors">
+                       <td className="p-3 font-bold text-gray-400 bg-[#252525] border-r border-neutral-600/50 uppercase text-[10px] tracking-wider text-center md:text-left">
+                         Kategori
+                       </td>
+                       <td className="p-3 font-medium text-neutral-200 capitalize">
+                         {currentProduct.nama_kategori || "Tanpa Kategori"}
+                       </td>
+                     </tr>
                      
                      <tr className="border-b border-neutral-600/50 hover:bg-[#3a3a3a] transition-colors">
                        <td className="p-3 font-bold text-gray-400 bg-[#252525] border-r border-neutral-600/50 uppercase text-[10px] tracking-wider text-center md:text-left">

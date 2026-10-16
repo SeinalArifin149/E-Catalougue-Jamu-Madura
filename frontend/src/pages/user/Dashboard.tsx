@@ -47,6 +47,13 @@ const UserDashboard: React.FC = () => {
   const itemsPerPage = 12;
   const [currentPage, setCurrentPage] = useState(1);
 
+  const handleToggleKategori = (idKategori: number) => {
+    setFilterKategori((prev) =>
+      prev.includes(idKategori) ? prev.filter((item) => item !== idKategori) : [...prev, idKategori]
+    );
+    setCurrentPage(1);
+  };
+
   // --- 🛰️ EFFECT: LOAD DATA KATALOG & MENU FILTER SEKALIGUS ---
   useEffect(() => {
     const memuatSemuaData = async () => {
@@ -66,12 +73,6 @@ const UserDashboard: React.FC = () => {
       }
     };
 
-    const handleToggleKategori = (idKategori: number) => {
-      setFilterKategori((prev) =>
-        prev.includes(idKategori) ? prev.filter((item) => item !== idKategori) : [...prev, idKategori]
-      );
-      setCurrentPage(1);
-    };
     memuatSemuaData();
   }, []);
 
