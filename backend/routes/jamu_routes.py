@@ -50,6 +50,15 @@ UPLOAD_FOLDER = BACKEND_ROOT / "static" / "uploads"
 # pada fitur yang masuk ke model ketika training.
 USE_SCALER_FOR_CLASSIFIER = False
 
+# Label ini dibuat oleh model lama berdasarkan kelompok kata kunci, sedangkan
+# database memakai nama kategori produk yang berbeda.
+MODEL_LABEL_TO_CATEGORY = {
+    "stamina": "Kesehatan",
+    "kesehatan wanita": "Perawatan Kewanitaan",
+    "kesehatan_wanita": "Perawatan Kewanitaan",
+    "perawatan": "Perawatan Kewanitaan",
+}
+
 # ============================================================
 # 1. CUSTOM PREPROCESSOR
 # Penting: class/module harus cocok dengan saat pickle dibuat.
@@ -301,6 +310,12 @@ def predict_class(text):
     confidence = float(np.max(probabilities[0]))
 
     return str(predicted_label), confidence
+
+
+def category_for_model_label(label):
+    """Ubah label internal model menjadi nama kategori produk database."""
+    normalized_label = re.sub(r"[^a-z0-9]+", " ", str(label).lower()).strip()
+    return MODEL_LABEL_TO_CATEGORY.get(normalized_label, str(label))
 
 
 def rank_jamu_by_similarity(query_text, jamu_items, limit=None):
@@ -773,8 +788,16 @@ def dapatkan_rekomendasi_ml():
         semua_jamu = Jamu.query.all()
         hasil = []
 
-        if label_prediksi is not None and semua_jamu:
-            normalized_label = re.sub(r"[^a-z0-9]+", " ", label_prediksi.lower()).strip()
+        kategori_prediksi = (
+            category_for_model_label(label_prediksi)
+            if label_prediksi is not None
+            else None
+        )
+        matching_items = []
+        if kategori_prediksi and semua_jamu:
+            normalized_label = re.sub(
+                r"[^a-z0-9]+", " ", kategori_prediksi.lower()
+            ).strip()
             matching_items = [
                 item for item in semua_jamu
                 if normalized_label
@@ -784,6 +807,12 @@ def dapatkan_rekomendasi_ml():
                     (item.kategori_rel.nama_kategori if item.kategori_rel else "").lower(),
                 ).strip()
             ]
+        if not matching_items:
+            # Kategori model lama tidak selalu memiliki relasi langsung di
+            # database. Tetap gunakan kemiripan keluhan agar hasil tidak kosong.
+            matching_items = semua_jamu
+
+        if matching_items:
             try:
                 load_text_artifacts()
                 hasil = rank_jamu_by_similarity(
@@ -797,12 +826,12 @@ def dapatkan_rekomendasi_ml():
         return jsonify({
             "status": "success",
             "message": (
-                "Prediksi berhasil, tetapi belum ada relasi kategori produk "
-                "yang cocok di database."
+                "Prediksi berhasil, tetapi rekomendasi kategori belum tersedia."
                 if label_prediksi is not None and not hasil
                 else "Rekomendasi berhasil diproses"
             ),
-            "prediksi_label": label_prediksi,
+            "prediksi_label": kategori_prediksi,
+            "prediksi_label_model": label_prediksi,
             "confidence": confidence,
             "kategori_produk_tersedia": bool(hasil),
             "teks_asli": teks_input,
