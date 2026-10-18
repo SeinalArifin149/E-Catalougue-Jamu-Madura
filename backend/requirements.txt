@@ -11,3 +11,4 @@ imbalanced-learn
 python-dotenv
 psycopg2-binary
 Sastrawi
+tensorflow-cpu

@@ -152,13 +152,13 @@ const Catalog: React.FC = () => {
             </div>
           )}
           {!loading && !error && visibleProducts.length > 0 && (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
               {visibleProducts.map((product) => (
                 <button
                   type="button"
                   key={product.id_jamu}
                   onClick={() => setSelectedProduct(product)}
-                  className="flex min-h-[310px] flex-col overflow-hidden rounded-2xl bg-white text-left shadow-md transition hover:-translate-y-1 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-[#967515] focus:ring-offset-2"
+                  className="flex min-h-[260px] flex-col overflow-hidden rounded-xl bg-white text-left shadow-md transition hover:-translate-y-1 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-[#967515] focus:ring-offset-2 sm:min-h-[310px] sm:rounded-2xl"
                 >
                   <div className="flex aspect-[4/3] items-center justify-center bg-gradient-to-br from-yellow-100 to-orange-300 p-3">
                     {product.image ? (
@@ -168,19 +168,19 @@ const Catalog: React.FC = () => {
                         className="h-full w-full rounded-xl object-cover"
                       />
                     ) : (
-                      <span className="px-4 text-center font-serif text-lg font-bold text-red-700">
+                      <span className="px-2 text-center font-serif text-sm font-bold text-red-700 sm:px-4 sm:text-lg">
                         {product.nama_jamu}
                       </span>
                     )}
                   </div>
-                  <div className="flex flex-1 flex-col p-4">
-                    <span className="mb-2 text-xs font-bold uppercase tracking-wide text-[#967515]">
+                  <div className="flex flex-1 flex-col p-3 sm:p-4">
+                    <span className="mb-1 text-[10px] font-bold uppercase tracking-wide text-[#967515] sm:mb-2 sm:text-xs">
                       {product.nama_jenis || "Tanpa jenis"}
                     </span>
-                    <h2 className="line-clamp-2 text-lg font-bold text-gray-900">
+                    <h2 className="line-clamp-2 text-sm font-bold leading-tight text-gray-900 sm:text-lg">
                       {product.nama_jamu}
                     </h2>
-                    <p className="mt-2 line-clamp-3 text-sm text-gray-600">
+                    <p className="mt-1 line-clamp-3 text-xs leading-relaxed text-gray-600 sm:mt-2 sm:text-sm">
                       {product.khasiat || "Informasi khasiat tidak tersedia."}
                     </p>
                   </div>

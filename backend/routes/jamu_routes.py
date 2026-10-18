@@ -37,7 +37,6 @@ MODEL_DIR = BACKEND_ROOT / "NLP" / "nlp5"
 if not MODEL_DIR.is_dir():
     MODEL_DIR = PROJECT_ROOT / "NLP" / "nlp5"
 MODEL_PATH = MODEL_DIR / "model_mlp.keras"
-PIPELINE_PATH = BACKEND_ROOT / "model_pipeline.pkl"
 TFIDF_PATH = MODEL_DIR / "tfidf.pkl"
 PREPROCESSOR_PATH = MODEL_DIR / "preprocessor.pkl"
 SCALER_PATH = MODEL_DIR / "scaler.pkl"
@@ -50,13 +49,10 @@ UPLOAD_FOLDER = BACKEND_ROOT / "static" / "uploads"
 # pada fitur yang masuk ke model ketika training.
 USE_SCALER_FOR_CLASSIFIER = False
 
-# Label ini dibuat oleh model lama berdasarkan kelompok kata kunci, sedangkan
-# database memakai nama kategori produk yang berbeda.
 MODEL_LABEL_TO_CATEGORY = {
-    "stamina": "Kesehatan",
-    "kesehatan wanita": "Perawatan Kewanitaan",
-    "kesehatan_wanita": "Perawatan Kewanitaan",
-    "perawatan": "Perawatan Kewanitaan",
+    "jamu kesehatan": "Kesehatan",
+    "jamu pasutri": "Pasutri",
+    "jamu perawatan kewanitaan": "Perawatan Kewanitaan",
 }
 
 # ============================================================
@@ -187,11 +183,6 @@ def load_ml_artifacts():
     try:
         import joblib
 
-        if PIPELINE_PATH.is_file():
-            classifier_pipeline = joblib.load(PIPELINE_PATH)
-            logger.info("Pipeline klasifikasi berhasil dimuat dari %s", PIPELINE_PATH)
-            return
-
         load_text_artifacts()
         required_files = [MODEL_PATH, LABEL_ENCODER_PATH]
         missing_files = [str(path) for path in required_files if not path.is_file()]
@@ -313,9 +304,9 @@ def predict_class(text):
 
 
 def category_for_model_label(label):
-    """Ubah label internal model menjadi nama kategori produk database."""
+    """Ubah label tiga kategori Keras menjadi nama kategori database."""
     normalized_label = re.sub(r"[^a-z0-9]+", " ", str(label).lower()).strip()
-    return MODEL_LABEL_TO_CATEGORY.get(normalized_label, str(label))
+    return MODEL_LABEL_TO_CATEGORY.get(normalized_label)
 
 
 def rank_jamu_by_similarity(query_text, jamu_items, limit=None):
