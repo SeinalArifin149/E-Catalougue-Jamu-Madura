@@ -7,6 +7,53 @@ import bgImageLeft from './Background hadap kiri.png';
 
 // 1. Import instance 'api' kustom kita yang memegang kendali base URL Vercel online
 import api from '../../api/axiosConfig'; 
+import { fetchFilterOptionsPublik } from '../../services/user_dashboard';
+
+type CategoryFilterOption = { id_kategori: number; nama_kategori: string };
+
+type FilterGroupProps<T, O> = {
+  title: string;
+  options: O[];
+  selected: T[];
+  onToggle: (value: T) => void;
+  getValue: (option: O) => T;
+  getLabel: (option: O) => string;
+};
+
+function FilterGroup<T, O>({
+  title,
+  options,
+  selected,
+  onToggle,
+  getValue,
+  getLabel,
+}: FilterGroupProps<T, O>) {
+  return (
+    <fieldset>
+      <legend className="mb-2 text-sm font-bold text-gray-800">{title}</legend>
+      <div className="flex max-h-40 flex-col gap-2 overflow-y-auto pr-1">
+        {options.length > 0 ? (
+          options.map((option) => {
+            const value = getValue(option);
+            return (
+              <label key={String(value)} className="flex items-start gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={selected.includes(value)}
+                  onChange={() => onToggle(value)}
+                  className="mt-0.5 accent-[#34C759]"
+                />
+                <span>{getLabel(option)}</span>
+              </label>
+            );
+          })
+        ) : (
+          <span className="text-xs italic text-gray-500">Belum tersedia</span>
+        )}
+      </div>
+    </fieldset>
+  );
+}
 
 const Recommendation: React.FC = () => {
   const navigate = useNavigate();
@@ -33,6 +80,17 @@ const Recommendation: React.FC = () => {
 
   // Filter limit hasil rekomendasi (5 atau 10, default 5)
   const [limit, setLimit] = useState<number>(5);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [menuFilters, setMenuFilters] = useState<{
+    kategori: CategoryFilterOption[];
+    jenis: string[];
+    kabupaten: string[];
+    perizinan: string[];
+  }>({ kategori: [], jenis: [], kabupaten: [], perizinan: [] });
+  const [filterJenis, setFilterJenis] = useState<string[]>([]);
+  const [filterKategori, setFilterKategori] = useState<number[]>([]);
+  const [filterAsal, setFilterAsal] = useState<string[]>([]);
+  const [filterPerizinan, setFilterPerizinan] = useState<string[]>([]);
   // 🛰️ FUNGSI HIT API BACKEND FLASK UNTUK MENDAPATKAN REKOMENDASI ML ONLINE
   const ambilRekomendasiML = async (queryTeks: string, skipCorrection: boolean = false) => {
     if (!queryTeks.trim()) return;
@@ -90,6 +148,38 @@ const Recommendation: React.FC = () => {
       ambilRekomendasiML(kataKunciAwal);
     }
   }, [kataKunciAwal]);
+
+  useEffect(() => {
+    const loadFilterOptions = async () => {
+      try {
+        const filters = await fetchFilterOptionsPublik();
+        setMenuFilters(filters || { kategori: [], jenis: [], kabupaten: [], perizinan: [] });
+      } catch (error) {
+        console.error("Gagal memuat opsi filter hasil pencarian:", error);
+      }
+    };
+
+    void loadFilterOptions();
+  }, []);
+
+  const toggleFilter = <T,>(value: T, setter: React.Dispatch<React.SetStateAction<T[]>>) => {
+    setter((previous) =>
+      previous.includes(value) ? previous.filter((item) => item !== value) : [...previous, value]
+    );
+  };
+
+  const filteredRecommendations = dataRekomendasi.filter((item) => {
+    const matchesJenis =
+      filterJenis.length === 0 || filterJenis.includes(item.nama_jenis);
+    const matchesKategori =
+      filterKategori.length === 0 || filterKategori.includes(Number(item.id_kategori));
+    const matchesAsal =
+      filterAsal.length === 0 || filterAsal.includes(item.nama_kabupaten);
+    const matchesPerizinan =
+      filterPerizinan.length === 0 || filterPerizinan.includes(item.nama_perizinan);
+
+    return matchesKategori && matchesJenis && matchesAsal && matchesPerizinan;
+  });
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -244,7 +334,17 @@ const Recommendation: React.FC = () => {
               )}
               {/* TOOLBAR: ANALISIS NLP & FILTER LIMIT */}
               {dataRekomendasi.length > 0 && (
-                <div className="mb-10 p-5 bg-white/80 backdrop-blur-md border border-emerald-100 rounded-2xl flex justify-end shadow-md animate-[slideDownFade_0.5s_ease-out_forwards]">
+                <div className="mb-10 p-5 bg-white/80 backdrop-blur-md border border-emerald-100 rounded-2xl shadow-md animate-[slideDownFade_0.5s_ease-out_forwards]">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setIsFilterOpen((open) => !open)}
+                      className="self-start rounded-xl bg-[#34C759] px-4 py-2 text-sm font-bold text-[#111] transition hover:bg-[#2eaf4e] focus:outline-none focus:ring-2 focus:ring-[#34C759]/50"
+                      aria-expanded={isFilterOpen}
+                    >
+                      {isFilterOpen ? "Tutup filter" : "Filter jamu"}
+                    </button>
+
                   {/* Limit Selector (Dropdown 5 atau 10) */}
                   <div className="flex items-center gap-3 bg-[#e8dbdf]/60 p-1.5 rounded-xl border border-gray-300/40 w-full md:w-auto justify-between md:justify-start">
                     <span className="text-xs font-bold text-gray-700 px-2">Tampilkan:</span>
@@ -263,13 +363,51 @@ const Recommendation: React.FC = () => {
                       <option value={10}>10 Rekomendasi</option>
                     </select>
                   </div>
+                  </div>
+
+                  {isFilterOpen && (
+                    <div className="mt-5 grid gap-5 border-t border-emerald-100 pt-5 sm:grid-cols-2 lg:grid-cols-4">
+                      <FilterGroup
+                        title="Kategori"
+                        options={menuFilters.kategori}
+                        selected={filterKategori}
+                        onToggle={(value) => toggleFilter(value, setFilterKategori)}
+                        getValue={(option) => option.id_kategori}
+                        getLabel={(option) => option.nama_kategori}
+                      />
+                      <FilterGroup
+                        title="Jenis"
+                        options={menuFilters.jenis}
+                        selected={filterJenis}
+                        onToggle={(value) => toggleFilter(value, setFilterJenis)}
+                        getValue={(option) => option}
+                        getLabel={(option) => option}
+                      />
+                      <FilterGroup
+                        title="Asal"
+                        options={menuFilters.kabupaten}
+                        selected={filterAsal}
+                        onToggle={(value) => toggleFilter(value, setFilterAsal)}
+                        getValue={(option) => option}
+                        getLabel={(option) => option}
+                      />
+                      <FilterGroup
+                        title="Perizinan"
+                        options={menuFilters.perizinan}
+                        selected={filterPerizinan}
+                        onToggle={(value) => toggleFilter(value, setFilterPerizinan)}
+                        getValue={(option) => option}
+                        getLabel={(option) => option}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* 🔥 GRID KATALOG 5 KOLOM (Dibatasi oleh State limit) */}
               <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-5 gap-3 sm:gap-6 justify-items-center justify-center">
-                {dataRekomendasi.length > 0 ? (
-                  dataRekomendasi.slice(0, limit).map((item, idx) => (
+                {filteredRecommendations.length > 0 ? (
+                  filteredRecommendations.slice(0, limit).map((item, idx) => (
                     <div 
                       key={item.id_jamu || idx}
                       onClick={() => handleCardClick(item)}
@@ -315,7 +453,9 @@ const Recommendation: React.FC = () => {
                 ) : (
                   /* TAMPILAN JIKA KELUHAN TIDAK COCOK DENGAN RAMUAN APAPUN */
                   <div className="col-span-full py-28 text-center text-gray-500 font-medium text-xl italic bg-white/60 w-full rounded-2xl border-2 border-dashed border-gray-300 shadow-inner px-6">
-                     Tidak ada ramuan jamu yang cocok dengan keluhan "{searchText || kataKunciAwal}", Bang. Coba masukkan gejala lain.
+                     {dataRekomendasi.length > 0
+                       ? "Tidak ada hasil yang sesuai dengan filter jamu yang dipilih."
+                       : `Tidak ada ramuan jamu yang cocok dengan keluhan "${searchText || kataKunciAwal}", Bang. Coba masukkan gejala lain.`}
                   </div>
                 )}
               </div>
