@@ -33,9 +33,19 @@ BASE_DIR = Path(__file__).resolve().parent
 BACKEND_ROOT = BASE_DIR.parent
 PROJECT_ROOT = BACKEND_ROOT.parent
 
-MODEL_DIR = BACKEND_ROOT / "NLP" / "nlp5"
-if not MODEL_DIR.is_dir():
-    MODEL_DIR = PROJECT_ROOT / "NLP" / "nlp5"
+MODEL_DIR_CANDIDATES = (
+    BACKEND_ROOT / "NLP" / "nlp5",
+    PROJECT_ROOT / "NLP" / "nlp5",
+)
+MODEL_DIR = next(
+    (
+        directory
+        for directory in MODEL_DIR_CANDIDATES
+        if (directory / "model_mlp.keras").is_file()
+        and (directory / "label_encoder.pkl").is_file()
+    ),
+    MODEL_DIR_CANDIDATES[-1],
+)
 MODEL_PATH = MODEL_DIR / "model_mlp.keras"
 TFIDF_PATH = MODEL_DIR / "tfidf.pkl"
 PREPROCESSOR_PATH = MODEL_DIR / "preprocessor.pkl"
