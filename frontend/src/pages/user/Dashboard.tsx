@@ -212,7 +212,7 @@ const UserDashboard: React.FC = () => {
     spellCheck={true}
     enterKeyHint="search"
     className="relative z-40 block h-12 w-full min-w-0 flex-1 touch-manipulation border-0 bg-transparent px-2 text-base text-white outline-none placeholder:text-white focus:ring-0"
-    placeholder="Masukkan keluhan Anda..."
+    placeholder="Cari Jamu disini yaaa..."
     value={keluhan}
     onChange={(e) => setKeluhan(e.target.value)}
   />
