@@ -340,14 +340,14 @@ const UserDashboard: React.FC = () => {
                   </p>
                 </div>
               ) : (
-                <div className={`transition-all duration-500 ease-in-out grid gap-3 sm:gap-8 justify-items-center justify-center mb-12 sm:mb-16 w-full
-                   ${isFilterOpen ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 lg:pr-[360px]' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4'}
+                <div className={`transition-all duration-500 ease-in-out grid grid-cols-2 gap-2 sm:gap-8 justify-items-center justify-center mb-12 sm:mb-16 w-full
+                   ${isFilterOpen ? 'sm:grid-cols-2 lg:grid-cols-3 lg:pr-[360px]' : 'sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4'}
                 `}>
                    {currentCards.length > 0 ? (
                       currentCards.map((item, idx) => (
                         <div 
                           key={item.id_jamu || idx} 
-                          className="hide-animate bg-[#eef6ec] w-full max-w-[340px] rounded-[16px] sm:rounded-[20px] p-2.5 sm:p-4 shadow-lg flex flex-col items-center hover:-translate-y-2 hover:shadow-2xl cursor-pointer transition-all duration-300 border border-green-100"
+                          className="hide-animate bg-[#eef6ec] w-full max-w-[340px] rounded-[16px] sm:rounded-[20px] p-2 sm:p-4 shadow-lg flex flex-col items-center hover:-translate-y-2 hover:shadow-2xl cursor-pointer transition-all duration-300 border border-green-100"
                           style={{transitionDelay: `${idx * 0.03}s`}}
                           onClick={() => handleCardClick(item)}
                         >
@@ -369,9 +369,9 @@ const UserDashboard: React.FC = () => {
                           
                           <div className="w-full text-center flex-grow flex flex-col justify-between">
                              <div>
-                                  <h3 className="text-gray-900 font-bold text-[18px] sm:text-[22px] mb-2 truncate w-full px-2 capitalize">{item.nama_jamu}</h3>
-                                  <p className="text-gray-600 text-[14px] sm:text-[16px] font-semibold mb-3 uppercase tracking-wide">{item.nama_jenis || "Jamu Madura"}</p>
-                                  <span className="inline-block px-4 py-1 bg-green-100 text-green-800 text-[13px] sm:text-[14px] font-bold italic rounded-full shadow-sm">{item.nama_kabupaten || "Lokal"}</span>
+                                  <h3 className="text-gray-900 font-bold text-[14px] sm:text-[22px] mb-2 truncate w-full px-1 sm:px-2 capitalize">{item.nama_jamu}</h3>
+                                  <p className="text-gray-600 text-[11px] sm:text-[16px] font-semibold mb-3 uppercase tracking-wide truncate">{item.nama_jenis || "Jamu Madura"}</p>
+                                  <span className="inline-block max-w-full truncate px-2 sm:px-4 py-1 bg-green-100 text-green-800 text-[11px] sm:text-[14px] font-bold italic rounded-full shadow-sm">{item.nama_kabupaten || "Lokal"}</span>
                              </div>
                           </div>
                        </div>
